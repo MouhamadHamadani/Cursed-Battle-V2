@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('train')" :active="request()->routeIs('train')">
                         {{ __('Train') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('market')" :active="request()->routeIs('market')">
+                        {{ __('Market') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -81,6 +84,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('train')" :active="request()->routeIs('train')">
                 {{ __('Train') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('market')" :active="request()->routeIs('market')">
+                {{ __('Market') }}
             </x-responsive-nav-link>
         </div>
 

@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Character extends Model
+class CharacterItem extends Model
 {
     /**
      * The attributes that aren't mass assignable.
@@ -23,23 +22,23 @@ class Character extends Model
     protected function casts(): array
     {
         return [
-            'hospitalized_until' => 'datetime',
+            'equipped' => 'boolean',
         ];
     }
 
     /**
-     * Get the user that owns the character.
+     * Get the item this row represents.
      */
-    public function user(): BelongsTo
+    public function item(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Item::class);
     }
 
     /**
-     * Get the character's owned item rows (see CharacterItem for the item relation).
+     * Get the character that owns this row.
      */
-    public function characterItems(): HasMany
+    public function character(): BelongsTo
     {
-        return $this->hasMany(CharacterItem::class);
+        return $this->belongsTo(Character::class);
     }
 }
