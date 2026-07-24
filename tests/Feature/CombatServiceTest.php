@@ -338,3 +338,243 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
     expect($log->gold_change)->toBe(10); // attacker won: +10% of loser's gold
     expect($log->xp_change)->toBe(60); // attacker's xp gain, from the attacker's perspective
 });
+
+// --- Gap-fill: turn order, in-fight dodge, anti-farm XP, zero-gold steal, non-KO tiebreak win ---
+
+test('the higher-agility defender acts first and can knock out the attacker before it swings', function () {
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 50,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'strength' => 1000,
+        'defense' => 5,
+        'agility' => 100, // higher than attacker's 50 -> defender acts first
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    expect($result->winner->id)->toBe($defender->id);
+    expect($result->knockout)->toBeTrue();
+    expect($result->rounds)->toBe(1);
+    expect($result->events[0]['actor'])->toBe('defender');
+    expect($result->events[0]['dodged'])->toBeFalse();
+    expect($result->events[0]['target_hp'])->toBe(0);
+
+    $attacker->refresh();
+    expect($attacker->health)->toBe(0); // never got a turn
+});
+
+test('mirror: the higher-agility attacker acts first and can knock out the defender before it swings', function () {
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'strength' => 1000,
+        'defense' => 5,
+        'agility' => 100, // higher than defender's 50 -> attacker acts first
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 50,
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    expect($result->winner->id)->toBe($attacker->id);
+    expect($result->knockout)->toBeTrue();
+    expect($result->rounds)->toBe(1);
+    expect($result->events[0]['actor'])->toBe('attacker');
+    expect($result->events[0]['dodged'])->toBeFalse();
+    expect($result->events[0]['target_hp'])->toBe(0);
+
+    $defender->refresh();
+    expect($defender->health)->toBe(0); // never got a turn
+});
+
+test('a dodge actually occurs inside a real fight and deals zero damage', function () {
+    // Seed 12345 (this file's standard seed) confirmed, by running the sim
+    // standalone rather than assuming: the defender's 75%-capped dodge
+    // chance (agility 150) dodges 8 of the attacker's 10 swings. Every other
+    // combat test in this file uses agility 0 (never dodges) -- this is the
+    // only test that exercises the dodged:true branch inside resolve()
+    // itself (effectiveDodgeChance is otherwise only unit-tested in
+    // isolation above).
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'strength' => 30,
+        'defense' => 5,
+        'agility' => 0,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 300,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 150, // dodge-capped at 75%
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    $attackerSwings = collect($result->events)->where('actor', 'attacker');
+    $dodged = $attackerSwings->where('dodged', true);
+
+    // Not vacuous: some swings dodge AND some land, proving both branches ran.
+    expect($dodged)->not->toBeEmpty();
+    expect($attackerSwings->where('dodged', false))->not->toBeEmpty();
+    foreach ($dodged as $event) {
+        expect($event['damage'])->toBe(0);
+    }
+});
+
+test('winner xp is halved by the anti-farm gap when a high-level attacker beats a much lower-level defender', function () {
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 20,
+        'xp' => 0,
+        'health' => 100,
+        'strength' => 1000,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 100,
+        'gold' => 100,
+        'agility' => 0,
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    // xp = XP_BASE 50 + loser.level(1) * XP_PER_LEVEL 10 = 60; winner.level(20) >
+    // loser.level(1) + FARM_GAP(5) is true, so it's halved: floor(60 / 2) = 30.
+    expect($result->xpChange)->toBe(30);
+
+    $attacker->refresh();
+    expect($attacker->xp)->toBe(30); // started at 0; threshold(20)=2000 so no level-up interferes
+});
+
+test('gold steal from a loser with zero gold transfers nothing and leaves both balances unchanged', function () {
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 100,
+        'health' => 100,
+        'strength' => 1000,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 0,
+        'health' => 100,
+        'agility' => 0,
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    expect($result->goldChange)->toBe(0);
+
+    $attacker->refresh();
+    $defender->refresh();
+    expect($attacker->gold)->toBe(100); // unchanged: floor(0 * 0.10) = 0
+    expect($defender->gold)->toBe(0);
+});
+
+test('an attacker who wins the 10-round tiebreak on remaining hp still hospitalizes the loser and moves gold', function () {
+    // Deterministic for ANY seed, not just the one below: the defender's
+    // damage is strength(5) - defense(5) = 0, plus at most +-level(1)
+    // variance, which always floors to MIN_DAMAGE 1 -- so the attacker's
+    // health after 10 rounds is always exactly 100 - 10 = 90. The attacker's
+    // damage floor (10 - 5 - 1 = 4/round minimum) caps the defender's worst
+    // case at 120 - 40 = 80, which is always < 90 -- so the attacker always
+    // wins the tiebreak and neither side is ever knocked out.
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 0,
+        'health' => 100,
+        'strength' => 10,
+        'defense' => 5,
+        'agility' => 0,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 100,
+        'health' => 120,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 0, // tie -> attacker acts first
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    expect($result->knockout)->toBeFalse();
+    expect($result->rounds)->toBe(CombatService::MAX_ROUNDS);
+    expect($result->winner->id)->toBe($attacker->id);
+
+    $attacker->refresh();
+    $defender->refresh();
+
+    expect($attacker->health)->toBe(90);
+    expect($defender->health)->toBeGreaterThanOrEqual(60)->and($defender->health)->toBeLessThanOrEqual(80);
+    expect($attacker->health)->toBeGreaterThan($defender->health);
+
+    expect($defender->isHospitalized())->toBeTrue();
+    expect($defender->gold)->toBe(90); // 100 - 10% steal
+    expect($attacker->gold)->toBe(10);
+});
+
+test('an exact remaining-hp tie after the round cap is resolved in the defenders favour', function () {
+    // Both fighters are identical with strength == defense (base damage 0), so
+    // every hit is max(MIN_DAMAGE 1, 0 +- variance) == exactly 1 for ANY seed.
+    // After MAX_ROUNDS with no KO both sit at exactly 40 HP -- a true tie, which
+    // ADR-001 resolves in the defender's favour (no draw in MVP). This is the
+    // only test that exercises that exact-equality tiebreak branch.
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 100,
+        'health' => 50,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 0,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 0,
+        'health' => 50,
+        'strength' => 5,
+        'defense' => 5,
+        'agility' => 0,
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(777))))->resolve($attacker, $defender);
+
+    expect($result->knockout)->toBeFalse();
+    expect($result->rounds)->toBe(CombatService::MAX_ROUNDS);
+    expect($result->winner->id)->toBe($defender->id); // exact HP tie -> defender wins
+
+    $attacker->refresh();
+    $defender->refresh();
+
+    expect($attacker->health)->toBe($defender->health); // genuinely tied
+    expect($attacker->health)->toBe(40); // 50 - 10 rounds * 1 dmg each
+    expect($attacker->isHospitalized())->toBeTrue(); // the loser is hospitalized
+    expect($attacker->gold)->toBe(90); // loser lost 10% to the winner
+    expect($defender->gold)->toBe(10);
+});

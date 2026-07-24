@@ -191,3 +191,63 @@ test('unequipping an owned item sets equipped to false', function () {
 
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->first()->equipped)->toBeFalse();
 });
+
+// --- Gap-fill: exact-gold boundary, same-type equip swap in isolation ---
+
+test('buying an item when gold exactly equals the cost succeeds and leaves zero gold', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 50,
+    ]);
+    $item = Item::create([
+        'name' => 'Bone Charm',
+        'type' => 'armor',
+        'defense_delta' => 1,
+        'min_level' => 1,
+        'cost' => 50,
+    ]);
+
+    $characterItem = (new MarketService)->buy($character, $item);
+
+    expect($characterItem->character_id)->toEqual($character->id);
+    expect($characterItem->item_id)->toEqual($item->id);
+
+    $character->refresh();
+    expect($character->gold)->toEqual(0);
+    expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->exists())->toBeTrue();
+});
+
+test('equipping a second owned item of the same type unequips the first, even with no other items owned', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 1000,
+    ]);
+    $dagger = Item::create([
+        'name' => 'Rusty Dagger',
+        'type' => 'weapon',
+        'strength_delta' => 2,
+        'min_level' => 1,
+        'cost' => 50,
+    ]);
+    $sword = Item::create([
+        'name' => 'Iron Sword',
+        'type' => 'weapon',
+        'strength_delta' => 5,
+        'min_level' => 1,
+        'cost' => 200,
+    ]);
+
+    $service = new MarketService;
+    $service->buy($character, $dagger);
+    $service->buy($character, $sword);
+
+    $service->equip($character, $dagger);
+    expect(CharacterItem::where('character_id', $character->id)->where('item_id', $dagger->id)->first()->equipped)->toBeTrue();
+
+    $service->equip($character, $sword);
+
+    expect(CharacterItem::where('character_id', $character->id)->where('item_id', $sword->id)->first()->equipped)->toBeTrue();
+    expect(CharacterItem::where('character_id', $character->id)->where('item_id', $dagger->id)->first()->equipped)->toBeFalse();
+});
