@@ -13,7 +13,7 @@
             </div>
             <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('XP') }}</p>
-                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $character->xp }}</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $character->xp }} / {{ app(\App\Services\LevelingService::class)->threshold($character->level) }} XP</p>
             </div>
             <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Gold') }}</p>

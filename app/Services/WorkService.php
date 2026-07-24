@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 class WorkService
 {
+    /** XP trickle per energy spent on a shift (Phase 8, ADR-001 §Leveling). */
+    public const XP_PER_ENERGY = 1;
+
     /**
      * Spend a character's entire current energy working an occupation,
      * earning energy_spent * occupation.gold_per_energy gold.
@@ -46,6 +49,9 @@ class WorkService
         }
 
         $character->refresh();
+
+        app(LevelingService::class)->awardXp($character, $energyBefore * self::XP_PER_ENERGY);
+        $character->refresh(); // reflect any level-up in the returned character
 
         return [
             'energy_spent' => $energyBefore,

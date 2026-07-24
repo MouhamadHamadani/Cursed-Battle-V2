@@ -27,10 +27,12 @@ test('qualified character works a shift and earns gold for all spent energy', fu
     expect($result['gold_earned'])->toEqual(16);
     expect($result['character']->energy)->toEqual(0);
     expect($result['character']->gold)->toEqual(116);
+    expect($result['character']->xp)->toEqual(8); // 8 energy spent * XP_PER_ENERGY 1
 
     $character->refresh();
     expect($character->energy)->toEqual(0);
     expect($character->gold)->toEqual(116);
+    expect($character->xp)->toEqual(8);
 });
 
 test('a character below the minimum level is rejected and nothing changes', function () {
@@ -100,6 +102,7 @@ test('a character with zero energy is rejected and earns no free gold', function
     $character->refresh();
     expect($character->gold)->toEqual(100);
     expect($character->energy)->toEqual(0);
+    expect($character->xp)->toEqual(0);
 });
 
 test('an occupation with a null max level accepts a high level character', function () {
