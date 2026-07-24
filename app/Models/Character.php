@@ -42,4 +42,14 @@ class Character extends Model
     {
         return $this->hasMany(CharacterItem::class);
     }
+
+    /**
+     * A hospitalized character can't attack or be attacked (CombatService
+     * pre-check, ADR-001 §Hospital). Lazy time check, no scheduler: release
+     * is implicit once hospitalized_until passes.
+     */
+    public function isHospitalized(): bool
+    {
+        return $this->hospitalized_until !== null && $this->hospitalized_until->isFuture();
+    }
 }
