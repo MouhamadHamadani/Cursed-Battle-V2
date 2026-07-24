@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Livewire\Battle;
 use App\Livewire\Market;
 use App\Livewire\Train;
 use App\Livewire\Work;
@@ -17,6 +18,7 @@ Route::get('/dashboard', function () {
 Route::get('/work', Work::class)->middleware(['auth', 'verified'])->name('work');
 Route::get('/train', Train::class)->middleware(['auth', 'verified'])->name('train');
 Route::get('/market', Market::class)->middleware(['auth', 'verified'])->name('market');
+Route::get('/battle', Battle::class)->middleware(['auth', 'verified'])->name('battle');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
