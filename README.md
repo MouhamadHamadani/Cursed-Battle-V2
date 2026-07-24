@@ -1,59 +1,130 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Cursed Battle
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfolio project — think Torn or OpenDominion, where battles resolve instantly against stored stats, not live real-time combat. Characters work jobs for gold, train for stat gains, equip gear, attack rivals, and heal over time. Losing a fight puts you in the hospital for 30 minutes; leveling up restores health.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 12** — backend framework
+- **Livewire 3** — reactive server-driven UI components
+- **Alpine.js** — bundled with Livewire 3
+- **MySQL** — persistent game state
+- **Hetzner VPS** — production target (not yet deployed)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Architecture principle (non-negotiable)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**All game logic lives in plain PHP service classes under `app/Services/` (the "brain"), fully decoupled from Livewire components.** Components call services and render results; they never contain calculation logic. This way the brain survives a future client swap (Livewire text UI → visual/mobile) without a rewrite.
 
-## Learning Laravel
+## Local setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Requirements
+- PHP 8.3 or higher
+- Composer
+- Node.js
+- MySQL (via WAMP)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Steps
 
-## Laravel Sponsors
+1. **Clone and install dependencies:**
+   ```bash
+   composer install
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-### Premium Partners
+3. **Important: MySQL engine note**
+   This machine's WAMP defaults to MyISAM. The app forces InnoDB in `config/database.php` (required for utf8mb4 unique keys and foreign keys). Create the database:
+   ```bash
+   mysql -u root -e "CREATE DATABASE cursed_battle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+4. **Run migrations and seed initial data:**
+   ```bash
+   php artisan migrate --seed
+   ```
+   Seeds 4 occupations (work jobs) and 6 items (weapons/armor).
 
-## Contributing
+5. **Install and build frontend:**
+   ```bash
+   npm install
+   npm run build
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+6. **Start the development server:**
+   ```bash
+   php artisan serve
+   ```
+   Open http://localhost:8000 in your browser.
 
-## Code of Conduct
+7. **Start the scheduler (second terminal) — REQUIRED for regen:**
+   ```bash
+   php artisan schedule:work
+   ```
+   Without this, energy and health never regenerate. The regen ticks every 5 minutes.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## How to play
 
-## Security Vulnerabilities
+1. **Register** — create a user account. A character is auto-created with default stats (level 1, 100 gold, 100 HP, 10 energy, and 5 in each of strength/defense/agility).
+2. **Work** — `/work` spends *all* your current energy at a job to earn gold (the starting job, Grave Digger, pays 2 gold per energy; higher-tier jobs pay more but gate on level). Also a small XP trickle — this is the core economy loop.
+3. **Train** — `/train` spends 5 energy to raise one stat by 1 (strength, defense, or agility). Permanent gains; no cap per level.
+4. **Market** — `/market` browse and buy weapons/armor, equip them. Gear carries stat bonuses. Costs gold and has level requirements.
+5. **Battle** — `/battle` attack another character. Fight resolves instantly in up to 10 rounds. Win = steal 10% of their gold + XP, lose = hospitalized for 30 minutes.
+6. **Hospital** — `/hospital` view remaining cooldown. While hospitalized, you can't fight (both attacking and being attacked are blocked). Work and Train stay available.
+7. **Level up** — accumulate XP via Work trickle and combat wins. Level thresholds are `level × 100` XP. Leveling up heals you fully, restores energy, and raises your max HP/energy caps.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Game rules quick-reference
 
-## License
+| Rule | Value |
+|------|-------|
+| Dodge chance | min(agility ÷ 2, **75%** hard cap) |
+| Combat rounds | max 10; resolve by remaining HP if no knockout |
+| Hospital cooldown | 30 minutes (blocks combat both directions only) |
+| Gold steal per win | 10% of loser's gold |
+| XP per level-up | Level × 100 XP threshold |
+| Anti-farming | XP halved if winner's level > loser's level + 5 |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md).
+
+## Testing
+
+Run the full test suite (94 Pest tests, focused on service-layer logic and economy edges):
+```bash
+php artisan test
+```
+
+Tests cover combat math (dodge, damage floor, KO vs tiebreak, turn order, anti-farming), economy boundaries (level gates, exact-gold purchases, item swaps), and regen atomicity. See `tests/Feature/` for specifics.
+
+## Project status
+
+**MVP feature-complete** (Phases 0–8):
+- ✓ Auth + character creation
+- ✓ Energy/health scheduler regen
+- ✓ Work (gold economy)
+- ✓ Train (stat gains)
+- ✓ Market (buy/equip gear)
+- ✓ Battle (instant-resolve PvP + combat logs)
+- ✓ Hospital (30-min cooldown)
+- ✓ Leveling (XP thresholds, pool scaling)
+
+**Not yet built** (deliberately deferred per project scope):
+- Quests, tournaments, clans
+- Live/real-time combat (current model is instant-resolve only)
+- Class system, localization, monetization
+- Pay-to-heal, energy cost per attack
+
+**Deployment** pending. A production runbook lives in `docs/DEPLOY.md` (for reference; not yet executed).
+
+## Design record
+
+- **CLAUDE.md** — project identity, stack lock, architecture principle, MVP scope
+- `.claude/adr/ADR-001-*` — combat formula, hospital, leveling spec + tunables
+- `.claude/plans/` — phase-by-phase build notes (Phases 0–9)
+
+## Tech docs
+
+- [Laravel 12](https://laravel.com/docs/12.x)
+- [Livewire 3](https://livewire.laravel.com)
+- [Pest](https://pestphp.com) — test framework
