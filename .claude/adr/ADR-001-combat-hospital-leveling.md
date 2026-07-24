@@ -1,8 +1,8 @@
 # ADR-001: Combat Resolution, Hospitalization & Leveling (Phases 6–8)
 
-**Status:** Proposed
+**Status:** Accepted (2026-07-24 — tunables accepted at their table defaults; Phases 6–8 shipped)
 **Date:** 2026-07-24
-**Deciders:** Mouhamad (project owner) — sign-off needed on the tunable constants (§Tunables) and the two forks already chosen below.
+**Deciders:** Mouhamad (project owner) — the two forks (persistent HP pool; combat+work-trickle XP) and the §Tunables defaults were accepted.
 **Supersedes:** the draft combat formula in CLAUDE.md (which explicitly says "formalize via ADR before implementing Phase 6").
 
 ---

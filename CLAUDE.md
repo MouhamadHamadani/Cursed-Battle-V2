@@ -20,7 +20,7 @@ Auth, character, work, train, market/equip, instant-resolve battle, hospital coo
 
 - `users` — standard Laravel auth fields
 - `characters` (1:1 `users`, its own table — NOT merged into `users`): level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp)
-- `jobs`: name, description, min_level, max_level, gold_per_energy, timestamps
+- `occupations` (this doc originally said `jobs`; renamed because Laravel's queue owns a `jobs` table and QUEUE/SESSION/CACHE run on the DB driver — the name collided): name, description, min_level, max_level, gold_per_energy, timestamps
 - `items`: name, type (weapon/armor), strength_delta, defense_delta, agility_delta, min_level, cost, image
 - `character_items`: character_id, item_id, equipped (bool)
 - `combat_logs`: attacker_id, defender_id, attacker_level, defender_level, attacker_stats (json snapshot), defender_stats (json snapshot), events (json round-by-round), winner_id, gold_change, xp_change, created_at
@@ -28,6 +28,8 @@ Auth, character, work, train, market/equip, instant-resolve battle, hospital coo
 Stats are **fixed columns** (strength/defense/agility), not a skills-pivot table. An earlier prototype used a `skills` + `user_skills` + `weapon_skills` pivot model — deliberately not carried forward for MVP; three stats don't justify the join overhead. Revisit only if a class system or a larger stat pool gets added post-MVP.
 
 ## Combat — draft formula, NOT yet finalized
+
+> **SUPERSEDED by [ADR-001](.claude/adr/ADR-001-combat-hospital-leveling.md) (Accepted 2026-07-24).** Phases 6–8 shipped against the ADR; it is the authoritative combat/hospital/leveling spec. The draft below is kept for history only.
 
 Carried forward from an earlier prototype and adjusted. **Run `/architecture` to formalize this into an ADR before implementing Phase 6** — treat it as a draft, not a locked spec.
 
