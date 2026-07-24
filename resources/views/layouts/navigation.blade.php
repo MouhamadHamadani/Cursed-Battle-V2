@@ -27,6 +27,9 @@
                     <x-nav-link :href="route('battle')" :active="request()->routeIs('battle')">
                         {{ __('Battle') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')">
+                        {{ __('Hospital') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -93,6 +96,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('battle')" :active="request()->routeIs('battle')">
                 {{ __('Battle') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')">
+                {{ __('Hospital') }}
             </x-responsive-nav-link>
         </div>
 

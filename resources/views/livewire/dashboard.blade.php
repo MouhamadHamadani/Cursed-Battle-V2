@@ -1,5 +1,11 @@
 <div>
     @if ($character)
+        @if ($character->isHospitalized())
+            <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-6">
+                {{ __('In hospital — released :time.', ['time' => $character->hospitalized_until->diffForHumans()]) }}
+            </div>
+        @endif
+
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Level') }}</p>
