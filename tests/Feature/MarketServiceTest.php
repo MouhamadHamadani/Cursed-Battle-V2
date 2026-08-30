@@ -251,3 +251,77 @@ test('equipping a second owned item of the same type unequips the first, even wi
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $sword->id)->first()->equipped)->toBeTrue();
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $dagger->id)->first()->equipped)->toBeFalse();
 });
+
+// ---------------------------------------------------------------------------
+// ADR-002 §4: the market is part of the full lock.
+// ---------------------------------------------------------------------------
+
+function busyTrader(): Character
+{
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 5,
+        'gold' => 1000,
+        'energy' => 10,
+    ]);
+
+    app(App\Services\WorkService::class)->start($character, App\Models\Occupation::create([
+        'name' => 'Grave Digger', 'description' => 'Dig.', 'min_level' => 1,
+        'max_level' => 5, 'gold_per_energy' => 2,
+    ]));
+
+    return $character->refresh();
+}
+
+test('a busy character cannot buy, and the refusal names what they are doing', function () {
+    $character = busyTrader();
+    $item = Item::create([
+        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'min_level' => 1, 'cost' => 50,
+    ]);
+
+    expect(fn () => (new MarketService)->buy($character, $item))
+        ->toThrow(GameActionException::class, 'The merchants will not serve thee while thou art at thy labours.');
+
+    expect(CharacterItem::count())->toBe(0);
+    expect($character->refresh()->gold)->toEqual(1000);
+});
+
+test('a busy character cannot equip or unequip', function () {
+    $character = busyTrader();
+    $item = Item::create([
+        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'min_level' => 1, 'cost' => 50,
+    ]);
+    $owned = CharacterItem::create([
+        'character_id' => $character->id, 'item_id' => $item->id, 'equipped' => false,
+    ]);
+
+    expect(fn () => (new MarketService)->equip($character, $item))
+        ->toThrow(GameActionException::class, 'The merchants will not serve thee while thou art at thy labours.');
+    expect(fn () => (new MarketService)->unequip($character, $item))
+        ->toThrow(GameActionException::class, 'The merchants will not serve thee while thou art at thy labours.');
+
+    expect($owned->refresh()->equipped)->toBeFalsy();
+});
+
+test('the market unblocks once the shift resolves, with no explicit resolve call', function () {
+    $character = busyTrader();
+    $item = Item::create([
+        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'min_level' => 1, 'cost' => 50,
+    ]);
+
+    // busyTrader() is level 5, so the shift runs 9m00s (ADR-002 pacing table).
+    $this->travel(10)->minutes();
+
+    // buy() resolves the finished shift itself, then trades.
+    (new MarketService)->buy($character, $item);
+
+    $character->refresh();
+    expect($character->activity_type)->toBeNull();
+    expect($character->gold)->toEqual(1000 + 20 - 50); // shift paid out, then the purchase
+    expect(CharacterItem::where('character_id', $character->id)->count())->toBe(1);
+
+    $this->travelBack();
+});

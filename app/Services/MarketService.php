@@ -10,6 +10,20 @@ use Illuminate\Support\Facades\DB;
 class MarketService
 {
     /**
+     * The market is part of ADR-002's full lock: a character mid Train/Work
+     * session cannot trade. Callers resolve any due session first, so this
+     * only fires for a session that is genuinely still running.
+     *
+     * @throws GameActionException
+     */
+    private static function assertNotBusy(Character $character): void
+    {
+        if ($character->isBusy()) {
+            throw new GameActionException('The merchants will not serve thee while thou art '.ActivityService::describe($character->activity_type).'.');
+        }
+    }
+
+    /**
      * Buy an item: level-gated, one-per-item, gold-gated. Multi-write
      * (decrement gold + insert pivot) so it runs inside a transaction with a
      * row lock on the character (laravel 12.x/queries Pessimistic Locking) —
@@ -17,8 +31,12 @@ class MarketService
      */
     public function buy(Character $character, Item $item): CharacterItem
     {
+        app(ActivityService::class)->resolvePending($character);
+
         return DB::transaction(function () use ($character, $item) {
             $fresh = Character::whereKey($character->id)->lockForUpdate()->firstOrFail();
+
+            self::assertNotBusy($fresh);
 
             if ($fresh->level < $item->min_level) {
                 throw new GameActionException('Your level is too low for this item.');
@@ -48,6 +66,9 @@ class MarketService
      */
     public function equip(Character $character, Item $item): void
     {
+        app(ActivityService::class)->resolvePending($character);
+        self::assertNotBusy($character->refresh());
+
         DB::transaction(function () use ($character, $item) {
             $owned = CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->first();
             if (! $owned) {
@@ -68,6 +89,9 @@ class MarketService
      */
     public function unequip(Character $character, Item $item): void
     {
+        app(ActivityService::class)->resolvePending($character);
+        self::assertNotBusy($character->refresh());
+
         CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)
             ->update(['equipped' => false]);
     }

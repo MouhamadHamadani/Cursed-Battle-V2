@@ -4,9 +4,12 @@ use App\Models\Character;
 use App\Models\CharacterItem;
 use App\Models\CombatLog;
 use App\Models\Item;
+use App\Models\Occupation;
 use App\Models\User;
 use App\Services\CombatService;
 use App\Services\GameActionException;
+use App\Services\TrainingService;
+use App\Services\WorkService;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
 
@@ -577,4 +580,69 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
     expect($attacker->isHospitalized())->toBeTrue(); // the loser is hospitalized
     expect($attacker->gold)->toBe(90); // loser lost 10% to the winner
     expect($defender->gold)->toBe(10);
+});
+
+// ---------------------------------------------------------------------------
+// ADR-002 §4: the full lock. Busy blocks attacking, NOT being attacked.
+// ---------------------------------------------------------------------------
+
+test('a busy attacker cannot fight, and the refusal names what they are doing', function () {
+    $attackerUser = User::factory()->create();
+    $attacker = Character::create(['user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10]);
+    $defender = Character::create(['user_id' => User::factory()->create()->id]);
+
+    app(WorkService::class)->start($attacker, Occupation::create([
+        'name' => 'Grave Digger', 'description' => 'Dig.', 'min_level' => 1,
+        'max_level' => 5, 'gold_per_energy' => 2,
+    ]));
+
+    expect(fn () => app(CombatService::class)->resolve($attacker->refresh(), $defender))
+        ->toThrow(GameActionException::class, 'Thou canst not take up arms while at thy labours.');
+
+    expect(CombatLog::count())->toBe(0);
+});
+
+test('a busy defender CAN still be attacked — a shift is not invulnerability', function () {
+    $attackerUser = User::factory()->create();
+    $attacker = Character::create([
+        'user_id' => $attackerUser->id,
+        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'agility' => 5,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id, 'level' => 1, 'energy' => 10, 'agility' => 0,
+    ]);
+
+    app(WorkService::class)->start($defender, Occupation::create([
+        'name' => 'Grave Digger', 'description' => 'Dig.', 'min_level' => 1,
+        'max_level' => 5, 'gold_per_energy' => 2,
+    ]));
+
+    expect($defender->refresh()->isBusy())->toBeTrue();
+
+    $result = app(CombatService::class)->resolve($attacker, $defender->refresh());
+
+    expect($result->winner->id)->toBe($attacker->id);
+    expect(CombatLog::count())->toBe(1);
+});
+
+test('a finished session unblocks attacking without any explicit resolve call', function () {
+    $attackerUser = User::factory()->create();
+    $attacker = Character::create([
+        'user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10,
+        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'agility' => 5,
+    ]);
+    $defender = Character::create(['user_id' => User::factory()->create()->id, 'agility' => 0]);
+
+    app(TrainingService::class)->start($attacker, 'strength');
+
+    $this->travel(6)->minutes();
+
+    // resolve() resolves the pending session itself, then fights.
+    $result = app(CombatService::class)->resolve($attacker->refresh(), $defender);
+
+    expect($result->winner->id)->toBe($attacker->id);
+    expect($attacker->refresh()->strength)->toEqual(1001); // the drill landed
+    expect($attacker->refresh()->activity_type)->toBeNull();
+
+    $this->travelBack();
 });

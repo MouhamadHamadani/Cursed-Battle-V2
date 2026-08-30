@@ -76,6 +76,11 @@ class CombatService
      */
     public function resolve(Character $attacker, Character $defender): CombatResult
     {
+        // Resolve any due session before the pre-check, and outside the
+        // transaction below (ADR-002 §2) — a finished shift must not block
+        // an attack.
+        app(ActivityService::class)->resolvePending($attacker);
+
         $this->assertCanFight($attacker, $defender);
 
         return DB::transaction(function () use ($attacker, $defender) {
@@ -102,6 +107,12 @@ class CombatService
 
         if ($attacker->isHospitalized()) {
             throw new GameActionException('You are hospitalized and cannot fight.');
+        }
+
+        // ADR-002 fork 1: being busy blocks attacking, but NOT being attacked —
+        // otherwise a long shift would be a stretch of invulnerability.
+        if ($attacker->isBusy()) {
+            throw new GameActionException('Thou canst not take up arms while '.ActivityService::describe($attacker->activity_type).'.');
         }
 
         if ($defender->isHospitalized()) {
