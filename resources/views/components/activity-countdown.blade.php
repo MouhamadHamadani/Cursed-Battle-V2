@@ -13,14 +13,20 @@
         timer: null,
         init() {
             this.tick();
-            this.timer = setInterval(() => this.tick(), 1000);
+            // Sub-second tick so two countdowns on the same page (status bar
+            // and page panel) never sit a second apart because their intervals
+            // happen to fire at different phases.
+            this.timer = setInterval(() => this.tick(), 250);
         },
         destroy() {
             clearInterval(this.timer);
         },
         tick() {
             const endsAt = new Date('{{ $completesAt->toIso8601String() }}');
-            this.remaining = Math.max(0, Math.round((endsAt - new Date()) / 1000));
+            // ceil, not round: the clock reads 00:00 only once the session has
+            // genuinely ended, so it never reports completion up to half a
+            // second early.
+            this.remaining = Math.max(0, Math.ceil((endsAt - new Date()) / 1000));
 
             if (this.remaining === 0 && ! this.fired) {
                 this.fired = true;
