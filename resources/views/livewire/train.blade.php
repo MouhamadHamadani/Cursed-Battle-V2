@@ -1,105 +1,91 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Train') }}
-        </h2>
+        </x-label>
     </x-slot>
+
+    @php
+        $cost = \App\Services\TrainingService::ENERGY_COST;
+        $stats = [
+            'strength' => ['label' => __('Strength'), 'icon' => 'fa-hand-fist', 'action' => __('Train Strength')],
+            'defense' => ['label' => __('Defense'), 'icon' => 'fa-shield-halved', 'action' => __('Train Defense')],
+            'agility' => ['label' => __('Agility'), 'icon' => 'fa-feather', 'action' => __('Train Agility')],
+        ];
+    @endphp
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('status'))
-                <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg">
-                    {{ session('status') }}
+            <x-flash />
+
+            <x-dark-leather class="border border-yellow-700 p-6">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+                    @foreach ($stats as $key => $stat)
+                        <div>
+                            <x-label class="text-yellow-500">
+                                <i class="fa-duotone fa-solid {{ $stat['icon'] }} me-2"></i>{{ $stat['label'] }}
+                            </x-label>
+                            <x-label class="text-3xl">{{ $this->character->{$key} }}</x-label>
+                        </div>
+                    @endforeach
+                    <div>
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-bolt me-2"></i>{{ __('Energy') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
+                    </div>
                 </div>
+            </x-dark-leather>
+
+            @if ($this->character->energy < $cost)
+                {{-- Too spent to drill: V1's in-character blocking copy. --}}
+                @php
+                    $spent = [
+                        'The training yard swims before thine eyes. Return when thy breath is thine own again.',
+                        'Steel demands a steady hand, and thine is not. Rest, then take it up once more.',
+                        'Thou hast drilled past thy limit. The next blow would teach thee nothing.',
+                        'Even the master sleeps. Come back to the yard with strength to spend.',
+                        'Thy wind is gone. Sit out this bout and let the hour restore thee.',
+                    ];
+                @endphp
+                <x-dark-wall class="border border-red-900 p-6 text-center">
+                    <i class="fa-duotone fa-solid fa-bed fa-2x text-red-500"></i>
+                    <x-label class="text-xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
+                </x-dark-wall>
             @endif
 
-            @if (session('error'))
-                <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-                    {{ session('error') }}
-                </div>
-            @endif
+            <x-divider />
 
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Strength') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->strength }}</p>
+            <div class="flex flex-wrap justify-center gap-6">
+                @foreach ($stats as $key => $stat)
+                    <x-dark-wall class="flex flex-col basis-full md:basis-[calc(33.333%-1rem)] border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
+                        <div class="text-center">
+                            <i class="fa-duotone fa-solid {{ $stat['icon'] }} fa-3x text-yellow-500"></i>
+                            <x-label class="text-2xl mt-3">{{ $stat['label'] }}</x-label>
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Defense') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->defense }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Agility') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->agility }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Energy') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->energy }} / {{ $this->character->max_energy }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                        <h3 class="text-lg font-semibold">{{ __('Strength') }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Current') }}: {{ $this->character->strength }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Costs') }} {{ \App\Services\TrainingService::ENERGY_COST }} {{ __('energy') }}
-                        </p>
-                        <x-primary-button
-                            wire:click="train('strength')"
-                            wire:loading.attr="disabled"
-                            wire:target="train"
-                        >
-                            {{ __('Train Strength') }}
-                        </x-primary-button>
-                    </div>
-                </div>
+                        <div class="mt-3 space-y-1 text-center">
+                            <x-label class="text-sm text-stone-400">
+                                {{ __('Current') }}: <span class="text-white">{{ $this->character->{$key} }}</span>
+                            </x-label>
+                            <x-label class="text-sm text-stone-400">
+                                {{ __('Costs') }} <span class="text-yellow-700">{{ $cost }}</span> {{ __('energy') }}
+                            </x-label>
+                        </div>
 
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                        <h3 class="text-lg font-semibold">{{ __('Defense') }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Current') }}: {{ $this->character->defense }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Costs') }} {{ \App\Services\TrainingService::ENERGY_COST }} {{ __('energy') }}
-                        </p>
-                        <x-primary-button
-                            wire:click="train('defense')"
-                            wire:loading.attr="disabled"
-                            wire:target="train"
-                        >
-                            {{ __('Train Defense') }}
-                        </x-primary-button>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                        <h3 class="text-lg font-semibold">{{ __('Agility') }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Current') }}: {{ $this->character->agility }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('Costs') }} {{ \App\Services\TrainingService::ENERGY_COST }} {{ __('energy') }}
-                        </p>
-                        <x-primary-button
-                            wire:click="train('agility')"
-                            wire:loading.attr="disabled"
-                            wire:target="train"
-                        >
-                            {{ __('Train Agility') }}
-                        </x-primary-button>
-                    </div>
-                </div>
+                        <div class="mt-auto pt-5">
+                            <x-button
+                                class="w-full"
+                                target="train"
+                                wire:click="train('{{ $key }}')"
+                                wire:loading.attr="disabled"
+                            >
+                                {{ $stat['action'] }}
+                            </x-button>
+                        </div>
+                    </x-dark-wall>
+                @endforeach
             </div>
 
         </div>
