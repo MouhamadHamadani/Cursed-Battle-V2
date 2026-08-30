@@ -1,124 +1,170 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Market') }}
-        </h2>
+        </x-label>
     </x-slot>
+
+    @php
+        // Stat deltas kept as values, not a pre-joined string, so each can be
+        // coloured green/red the way V1 does.
+        $deltasOf = fn ($item) => array_values(array_filter([
+            ['label' => 'STR', 'value' => $item->strength_delta],
+            ['label' => 'DEF', 'value' => $item->defense_delta],
+            ['label' => 'AGI', 'value' => $item->agility_delta],
+        ], fn ($d) => $d['value'] !== 0));
+
+        // Items carry no art yet (image column is nullable) — fall back to the crest.
+        $artOf = fn ($item) => $item->image && file_exists(public_path($item->image))
+            ? asset($item->image)
+            : asset('images/logo 2.png');
+
+        $iconOf = fn ($item) => $item->type === 'armor' ? 'fa-shield-halved' : 'fa-swords';
+    @endphp
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('status'))
-                <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg">
-                    {{ session('status') }}
-                </div>
-            @endif
+            <x-flash />
 
-            @if (session('error'))
-                <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Gold') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->gold }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Level') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->level }}</p>
-                        </div>
+            <x-dark-leather class="border border-yellow-700 p-6">
+                <div class="grid grid-cols-2 gap-6 text-center">
+                    <div>
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->gold }}</x-label>
+                    </div>
+                    <div>
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-shield-halved me-2"></i>{{ __('Level') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->level }}</x-label>
                     </div>
                 </div>
-            </div>
+            </x-dark-leather>
 
+            <x-divider />
+
+            {{-- Shop --}}
             <div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{{ __('Shop') }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
+                    <i class="fa-duotone fa-solid fa-treasure-chest me-2"></i>{{ __('Shop') }}
+                </x-label>
+
+                <div class="flex flex-wrap justify-center gap-6">
                     @foreach ($this->items as $item)
                         @php
-                            $deltas = [];
-                            if ($item->strength_delta !== 0) { $deltas[] = ($item->strength_delta > 0 ? '+' : '').$item->strength_delta.' STR'; }
-                            if ($item->defense_delta !== 0) { $deltas[] = ($item->defense_delta > 0 ? '+' : '').$item->defense_delta.' DEF'; }
-                            if ($item->agility_delta !== 0) { $deltas[] = ($item->agility_delta > 0 ? '+' : '').$item->agility_delta.' AGI'; }
-
+                            $deltas = $deltasOf($item);
                             $owned = in_array($item->id, $this->ownedItemIds, true);
                             $locked = $this->character->level < $item->min_level;
                             $affordable = $this->character->gold >= $item->cost;
                         @endphp
 
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                                <h4 class="text-lg font-semibold">{{ $item->name }}</h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $item->type }}</p>
+                        <x-dark-wall wire:key="shop-{{ $item->id }}"
+                                     class="flex flex-col basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)] border border-yellow-700 p-5 hover:border-yellow-500 transition duration-300">
+                            <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
 
-                                @if (count($deltas))
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ implode(', ', $deltas) }}</p>
-                                @endif
+                            <x-label class="text-xl text-center mt-3">{{ $item->name }}</x-label>
+                            <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
+                                <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->type }}
+                            </x-label>
 
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Req. level') }} {{ $item->min_level }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $item->cost }} {{ __('gold') }}</p>
+                            @if (count($deltas))
+                                <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3">
+                                    @foreach ($deltas as $delta)
+                                        <x-label class="text-sm">
+                                            <strong class="text-stone-400">{{ $delta['label'] }}:</strong>
+                                            <span class="{{ $delta['value'] > 0 ? 'text-green-500' : 'text-red-500' }}">
+                                                {{ $delta['value'] > 0 ? '+' : '' }}{{ $delta['value'] }}
+                                            </span>
+                                        </x-label>
+                                    @endforeach
+                                </div>
+                            @endif
 
+                            <div class="mt-3 space-y-1 text-center">
+                                <x-label class="text-sm text-stone-400">{{ __('Req. level') }} {{ $item->min_level }}</x-label>
+                                <x-label class="text-sm">
+                                    <i class="fa-duotone fa-solid fa-coins text-yellow-500 me-1"></i>
+                                    <span class="{{ $affordable ? 'text-white' : 'text-red-500' }}">{{ $item->cost }}</span>
+                                </x-label>
+                            </div>
+
+                            <div class="mt-auto pt-5">
                                 @if ($owned)
-                                    <span class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest cursor-not-allowed">
-                                        {{ __('Owned') }}
-                                    </span>
+                                    <x-button class="w-full" disable>
+                                        <i class="fa-duotone fa-solid fa-circle-check me-2"></i>{{ __('Owned') }}
+                                    </x-button>
                                 @elseif ($locked)
-                                    <span class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest cursor-not-allowed">
-                                        {{ __('Locked (Lv :level)', ['level' => $item->min_level]) }}
-                                    </span>
+                                    <x-button class="w-full" disable>
+                                        <i class="fa-duotone fa-solid fa-lock me-2"></i>{{ __('Locked (Lv :level)', ['level' => $item->min_level]) }}
+                                    </x-button>
                                 @elseif (! $affordable)
-                                    <x-primary-button disabled class="opacity-50 cursor-not-allowed">
-                                        {{ __("Can't afford") }}
-                                    </x-primary-button>
+                                    <x-button class="w-full" disable>{{ __("Can't afford") }}</x-button>
                                 @else
-                                    <x-primary-button
+                                    <x-button
+                                        class="w-full"
+                                        target="buy"
                                         wire:click="buy({{ $item->id }})"
                                         wire:loading.attr="disabled"
-                                        wire:target="buy"
                                     >
                                         {{ __('Buy') }}
-                                    </x-primary-button>
+                                    </x-button>
                                 @endif
                             </div>
-                        </div>
+                        </x-dark-wall>
                     @endforeach
                 </div>
             </div>
 
+            <x-divider />
+
+            {{-- Inventory --}}
             <div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{{ __('Inventory') }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
+                    <i class="fa-duotone fa-solid fa-sack me-2"></i>{{ __('Inventory') }}
+                </x-label>
+
+                <div class="flex flex-wrap justify-center gap-6">
                     @forelse ($this->inventory as $characterItem)
                         @php
                             $item = $characterItem->item;
-                            $deltas = [];
-                            if ($item->strength_delta !== 0) { $deltas[] = ($item->strength_delta > 0 ? '+' : '').$item->strength_delta.' STR'; }
-                            if ($item->defense_delta !== 0) { $deltas[] = ($item->defense_delta > 0 ? '+' : '').$item->defense_delta.' DEF'; }
-                            if ($item->agility_delta !== 0) { $deltas[] = ($item->agility_delta > 0 ? '+' : '').$item->agility_delta.' AGI'; }
+                            $deltas = $deltasOf($item);
                         @endphp
 
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-lg font-semibold">{{ $item->name }}</h4>
-                                    @if ($characterItem->equipped)
-                                        <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 rounded text-xs font-semibold uppercase tracking-widest">
-                                            {{ __('Equipped') }}
-                                        </span>
-                                    @endif
-                                </div>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $item->type }}</p>
+                        <x-dark-wall wire:key="inv-{{ $characterItem->id }}"
+                                     class="flex flex-col basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)] border {{ $characterItem->equipped ? 'border-green-500' : 'border-yellow-700' }} p-5 transition duration-300">
+                            <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
 
-                                @if (count($deltas))
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ implode(', ', $deltas) }}</p>
+                            <div class="flex items-center justify-center gap-2 mt-3">
+                                <x-label class="text-xl">{{ $item->name }}</x-label>
+                                @if ($characterItem->equipped)
+                                    <x-label class="text-xs uppercase tracking-widest text-green-500">{{ __('Equipped') }}</x-label>
                                 @endif
+                            </div>
 
+                            <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
+                                <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->type }}
+                            </x-label>
+
+                            @if (count($deltas))
+                                <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3">
+                                    @foreach ($deltas as $delta)
+                                        <x-label class="text-sm">
+                                            <strong class="text-stone-400">{{ $delta['label'] }}:</strong>
+                                            <span class="{{ $delta['value'] > 0 ? 'text-green-500' : 'text-red-500' }}">
+                                                {{ $delta['value'] > 0 ? '+' : '' }}{{ $delta['value'] }}
+                                            </span>
+                                        </x-label>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="mt-auto pt-5">
                                 @if ($characterItem->equipped)
                                     <x-secondary-button
+                                        class="w-full"
                                         wire:click="unequip({{ $characterItem->item_id }})"
                                         wire:loading.attr="disabled"
                                         wire:target="unequip"
@@ -126,18 +172,19 @@
                                         {{ __('Unequip') }}
                                     </x-secondary-button>
                                 @else
-                                    <x-primary-button
+                                    <x-button
+                                        class="w-full"
+                                        target="equip"
                                         wire:click="equip({{ $characterItem->item_id }})"
                                         wire:loading.attr="disabled"
-                                        wire:target="equip"
                                     >
                                         {{ __('Equip') }}
-                                    </x-primary-button>
+                                    </x-button>
                                 @endif
                             </div>
-                        </div>
+                        </x-dark-wall>
                     @empty
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('You have no items yet.') }}</p>
+                        <x-label class="text-stone-400">{{ __('You have no items yet.') }}</x-label>
                     @endforelse
                 </div>
             </div>
