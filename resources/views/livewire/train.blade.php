@@ -32,7 +32,29 @@
                 </div>
             </x-dark-leather>
 
-            @if ($this->character->energy < $cost)
+            @if ($this->character->isBusy())
+                {{-- V1's training-in-progress copy, lifted from the training
+                     flavour array in V1's battle.blade.php. --}}
+                @php
+                    $drilling = [
+                        'Thou art in the midst of rigorous training. Return anon to see thine progress.',
+                        'The training grounds are alive with thy efforts. Patience, for thy skills are yet honing.',
+                        'Engrossed in thy training, thou must wait for the completion of this arduous task.',
+                        'In the heart of training, thou art. Await the end of this endeavor to continue thy journey.',
+                        'The echoes of thy training resonate. Return when the echo fades and thy training is complete.',
+                    ];
+                @endphp
+                <x-dark-wall class="border border-yellow-700 p-6 text-center">
+                    <i class="fa-duotone fa-solid fa-dumbbell fa-2x text-yellow-500"></i>
+                    <x-label class="text-xl text-yellow-500 mt-3">{{ $drilling[array_rand($drilling)] }}</x-label>
+                    <x-label class="text-4xl mt-4">
+                        <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
+                    </x-label>
+                    @if ($this->character->activity_stat)
+                        <x-label class="text-sm text-stone-400 mt-2">{{ __('Thy drill') }}: {{ ucfirst($this->character->activity_stat) }}</x-label>
+                    @endif
+                </x-dark-wall>
+            @elseif ($this->character->energy < $cost)
                 {{-- Too spent to drill: V1's in-character blocking copy. --}}
                 @php
                     $spent = [
@@ -69,14 +91,20 @@
                         </div>
 
                         <div class="mt-auto pt-5">
-                            <x-button
-                                class="w-full"
-                                target="train"
-                                wire:click="train('{{ $key }}')"
-                                wire:loading.attr="disabled"
-                            >
-                                {{ $stat['action'] }}
-                            </x-button>
+                            @if ($this->character->isBusy())
+                                <x-button class="w-full" disable>
+                                    <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                                </x-button>
+                            @else
+                                <x-button
+                                    class="w-full"
+                                    target="train"
+                                    wire:click="train('{{ $key }}')"
+                                    wire:loading.attr="disabled"
+                                >
+                                    {{ $stat['action'] }}
+                                </x-button>
+                            @endif
                         </div>
                     </x-dark-wall>
                 @endforeach

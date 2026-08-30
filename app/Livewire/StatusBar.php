@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Character;
+use App\Services\ActivityService;
 use App\Services\LevelingService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -50,6 +51,22 @@ class StatusBar extends Component
     public function onCharacterUpdated(): void
     {
         unset($this->character, $this->xpThreshold);
+    }
+
+    /**
+     * The countdown badge reached zero. Ask the server to settle the session
+     * (idempotent — several listeners may fire at once), then tell every
+     * other component to re-read so the badges clear everywhere at once.
+     */
+    #[On('activity-completed')]
+    public function onActivityCompleted(): void
+    {
+        if ($this->character) {
+            app(ActivityService::class)->resolvePending($this->character);
+        }
+
+        unset($this->character, $this->xpThreshold);
+        $this->dispatch('character-updated');
     }
 
     public function render()

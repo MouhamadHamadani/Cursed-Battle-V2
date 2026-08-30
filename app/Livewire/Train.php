@@ -2,15 +2,30 @@
 
 namespace App\Livewire;
 
+use App\Services\ActivityService;
 use App\Services\GameActionException;
 use App\Services\TrainingService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 class Train extends Component
 {
+    /** Lazy resolution point (ADR-002 §2): a finished drill lands on page load. */
+    public function mount(): void
+    {
+        app(ActivityService::class)->resolvePending($this->character);
+        unset($this->character);
+    }
+
+    #[On('character-updated')]
+    public function refreshCharacter(): void
+    {
+        unset($this->character);
+    }
+
     #[Computed]
     public function character()
     {

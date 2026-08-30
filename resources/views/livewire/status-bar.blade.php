@@ -27,10 +27,27 @@
                     <x-label>{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
                 </div>
 
-                @if ($this->character->isHospitalized())
-                    <div class="flex flex-1 justify-center items-center gap-x-2" title="{{ __('Hospitalized') }}">
-                        <i class="fa-duotone fa-solid fa-kit-medical text-red-500"></i>
-                        <x-label class="text-red-500">{{ $this->character->hospitalized_until->diffForHumans() }}</x-label>
+                {{-- Status badges get their own full-width row (basis-full) so the
+                     busy and hospitalized badges can never crowd the figures or
+                     each other, even in the both-at-once case. --}}
+                @if ($this->character->isBusy() || $this->character->isHospitalized())
+                    <div class="basis-full flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3 border-t border-yellow-700/40">
+                        @if ($this->character->isBusy())
+                            <div class="flex items-center gap-x-2" title="{{ __('Busy') }}">
+                                <i class="fa-duotone fa-solid {{ $this->character->activity_type === 'work' ? 'fa-hammer' : 'fa-dumbbell' }} text-yellow-500"></i>
+                                <x-label class="text-yellow-500">
+                                    {{ ucfirst(\App\Services\ActivityService::describe($this->character->activity_type)) }}
+                                </x-label>
+                                <x-activity-countdown :completes-at="$this->character->activity_completes_at" class="text-white" />
+                            </div>
+                        @endif
+
+                        @if ($this->character->isHospitalized())
+                            <div class="flex items-center gap-x-2" title="{{ __('Hospitalized') }}">
+                                <i class="fa-duotone fa-solid fa-kit-medical text-red-500"></i>
+                                <x-label class="text-red-500">{{ $this->character->hospitalized_until->diffForHumans() }}</x-label>
+                            </div>
+                        @endif
                     </div>
                 @endif
             </x-dark-wall>

@@ -10,7 +10,30 @@
 
             <x-flash />
 
-            @if ($this->character->energy < 1)
+            @if ($this->character->isBusy())
+                {{-- V1's "thou art at work" full-lock panel — copy lifted from the
+                     job flavour array in V1's battle.blade.php. --}}
+                @php
+                    $atWork = [
+                        'Thou art diligently at work in thy chosen craft. Return when thy labors are complete.',
+                        'Engrossed in thy duties, time must pass before thy task is done. Come back when thou hast finished.',
+                        'As a dedicated artisan, thou art busy with thy work. Seek me out once thy job is fulfilled.',
+                        'In the midst of thy toil, patience is required. Return to me once thy work is concluded.',
+                        'The workshop calls for thy attention now. Once thy job is done, return to continue thy quest.',
+                    ];
+                    $currentJob = $this->occupations->firstWhere('id', $this->character->activity_occupation_id);
+                @endphp
+                <x-dark-wall class="border border-yellow-700 p-6 text-center">
+                    <i class="fa-duotone fa-solid fa-hammer fa-2x text-yellow-500"></i>
+                    <x-label class="text-xl text-yellow-500 mt-3">{{ $atWork[array_rand($atWork)] }}</x-label>
+                    <x-label class="text-4xl mt-4">
+                        <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
+                    </x-label>
+                    @if ($currentJob)
+                        <x-label class="text-sm text-stone-400 mt-2">{{ __('Thy trade') }}: {{ $currentJob->name }}</x-label>
+                    @endif
+                </x-dark-wall>
+            @elseif ($this->character->energy < 1)
                 {{-- Spent: V1's in-character blocking copy rather than "please wait". --}}
                 @php
                     $spent = [
@@ -55,7 +78,7 @@
                         </div>
 
                         <div class="mt-auto pt-5">
-                            @if ($qualifies)
+                            @if ($qualifies && ! $this->character->isBusy())
                                 <x-button
                                     class="w-full"
                                     target="work"
@@ -63,6 +86,10 @@
                                     wire:loading.attr="disabled"
                                 >
                                     {{ __('Work a shift') }}
+                                </x-button>
+                            @elseif ($this->character->isBusy())
+                                <x-button class="w-full" disable>
+                                    <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
                                 </x-button>
                             @else
                                 <x-button class="w-full" disable>
