@@ -1,11 +1,13 @@
 <?php
 
+use App\Livewire\Market;
 use App\Models\Character;
 use App\Models\CharacterItem;
 use App\Models\Item;
 use App\Models\User;
 use App\Services\GameActionException;
 use App\Services\MarketService;
+use Livewire\Livewire;
 
 test('buying an item with enough gold and level creates an owned row and decreases gold', function () {
     $character = Character::create([
@@ -324,4 +326,50 @@ test('the market unblocks once the shift resolves, with no explicit resolve call
     expect(CharacterItem::where('character_id', $character->id)->count())->toBe(1);
 
     $this->travelBack();
+});
+
+test('buying an item locked to another faction is rejected and no gold is spent', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'faction' => 'faction_1',
+        'level' => 5,
+        'gold' => 1000,
+    ]);
+    $item = Item::factory()->create(['faction' => 'faction_2', 'cost' => 50, 'min_level' => 1]);
+
+    expect(fn () => (new MarketService)->buy($character, $item))
+        ->toThrow(GameActionException::class);
+
+    $character->refresh();
+    expect($character->gold)->toEqual(1000);
+    expect(CharacterItem::where('character_id', $character->id)->exists())->toBeFalse();
+});
+
+test('buying an item of the character own faction is allowed', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'faction' => 'faction_2',
+        'level' => 5,
+        'gold' => 1000,
+    ]);
+    $item = Item::factory()->create(['faction' => 'faction_2', 'cost' => 50, 'min_level' => 1]);
+
+    (new MarketService)->buy($character, $item);
+
+    expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->exists())->toBeTrue();
+});
+
+test('the market lists universal items plus the character own faction, and nothing else', function () {
+    $user = User::factory()->create();
+    Character::create(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
+
+    $universal = Item::factory()->create(['faction' => null]);
+    $mine = Item::factory()->create(['faction' => 'faction_1']);
+    $theirs = Item::factory()->create(['faction' => 'faction_2']);
+
+    $this->actingAs($user);
+    $listed = Livewire::test(Market::class)->instance()->items()->pluck('id');
+
+    expect($listed)->toContain($universal->id, $mine->id);
+    expect($listed)->not->toContain($theirs->id);
 });

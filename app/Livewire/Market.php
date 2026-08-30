@@ -21,7 +21,11 @@ class Market extends Component
     #[Computed]
     public function items()
     {
-        return Item::orderBy('min_level')->orderBy('cost')->get();
+        // Faction-locked items are hidden from other factions; NULL is universal.
+        return Item::where(fn ($q) => $q->whereNull('faction')->orWhere('faction', $this->character->faction))
+            ->orderBy('min_level')
+            ->orderBy('cost')
+            ->get();
     }
 
     #[Computed]

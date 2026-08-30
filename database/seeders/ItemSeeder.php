@@ -78,6 +78,30 @@ class ItemSeeder extends Seeder
                 'cost' => 600,
                 'image' => null,
             ],
+            // Faction-locked wares. Everything above is universal (faction NULL)
+            // — a basic dagger sells to anyone.
+            [
+                'name' => 'Ashen Scimitar',
+                'type' => 'weapon',
+                'faction' => 'faction_1',
+                'strength_delta' => 4,
+                'defense_delta' => 0,
+                'agility_delta' => 1,
+                'min_level' => 2,
+                'cost' => 180,
+                'image' => null,
+            ],
+            [
+                'name' => 'Tidebound Axe',
+                'type' => 'weapon',
+                'faction' => 'faction_2',
+                'strength_delta' => 5,
+                'defense_delta' => 0,
+                'agility_delta' => 0,
+                'min_level' => 2,
+                'cost' => 180,
+                'image' => null,
+            ],
         ];
 
         foreach ($items as $item) {

@@ -12,16 +12,20 @@ Laravel 12 + Livewire 3 + Alpine.js + MySQL, Hetzner VPS. Do not suggest switchi
 All game logic — combat resolution, economy math, training math — lives in plain PHP service classes under `app/Services/`, fully decoupled from Livewire components. Livewire components call services and render results; they never contain calculation logic. This is so the "brain" survives a future client swap (Livewire text UI → visual/mobile) without a rewrite.
 
 ## MVP scope — build only this
-Auth, character, work, train, market/equip, instant-resolve battle, hospital cooldown, leveling.
+Auth, character, work, train, market/equip, instant-resolve battle, hospital cooldown, leveling, faction selection.
 
-**Do not build, even if it seems natural to add:** quests, tournaments, clans, live/real-time combat, a class system, Arabic/MENA theming or localization, or any monetization. These are deliberately deferred — if a task seems to need one of these, flag it instead of building it.
+**Faction selection** (added to MVP scope 2026-08-30, built — not a deferred item): a required, permanent two-way faction pick at character creation, and a market that only sells a character universal wares plus its own faction's. That is the whole slice.
+
+**Do not build, even if it seems natural to add:** quests, tournaments, clans, live/real-time combat, a class system, Arabic/MENA theming or localization, any monetization, faction switching, or the nation-vs-nation scheduled battle event (that is the intended phase 2 of factions, deliberately not started). These are deliberately deferred — if a task seems to need one of these, flag it instead of building it.
+
+Faction **display names are not decided** — the DB keys are deliberately generic (`faction_1`, `faction_2`, in `Character::FACTIONS`) so naming can change without touching schema or queries, and the UI labels are placeholders. Leaning fictional rather than a real dynasty or caliphate; do not invent final names.
 
 ## Data model (decided this session — add to knowledge doc if not already there)
 
 - `users` — standard Laravel auth fields
-- `characters` (1:1 `users`, its own table — NOT merged into `users`): level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp)
+- `characters` (1:1 `users`, its own table — NOT merged into `users`): faction (not null, picked once at creation, immutable for MVP), level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp)
 - `occupations` (this doc originally said `jobs`; renamed because Laravel's queue owns a `jobs` table and QUEUE/SESSION/CACHE run on the DB driver — the name collided): name, description, min_level, max_level, gold_per_energy, timestamps
-- `items`: name, type (weapon/armor), strength_delta, defense_delta, agility_delta, min_level, cost, image
+- `items`: name, type (weapon/armor), faction (nullable — NULL is universal, sold to everyone), strength_delta, defense_delta, agility_delta, min_level, cost, image. Market listing filters to `faction IS NULL OR faction = character.faction`, and `MarketService::buy()` re-checks it (the item id is client input).
 - `character_items`: character_id, item_id, equipped (bool)
 - `combat_logs`: attacker_id, defender_id, attacker_level, defender_level, attacker_stats (json snapshot), defender_stats (json snapshot), events (json round-by-round), winner_id, gold_change, xp_change, created_at
 

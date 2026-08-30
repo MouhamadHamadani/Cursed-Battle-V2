@@ -38,6 +38,13 @@ class MarketService
 
             self::assertNotBusy($fresh);
 
+            // Faction gate: a NULL item faction is universal, anything else is
+            // sold only to its own. Enforced here and not just in the listing —
+            // $item comes from untrusted client input.
+            if ($item->faction !== null && $item->faction !== $fresh->faction) {
+                throw new GameActionException('These wares are not sold to your kind.');
+            }
+
             if ($fresh->level < $item->min_level) {
                 throw new GameActionException('Your level is too low for this item.');
             }

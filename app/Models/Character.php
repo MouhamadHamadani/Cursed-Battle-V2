@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Character extends Model
 {
     /**
+     * Faction keys are deliberately generic: display names are still TBD and
+     * must be changeable without touching schema or queries. Picked once at
+     * character creation, immutable for MVP.
+     */
+    public const FACTIONS = ['faction_1', 'faction_2'];
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array<int, string>

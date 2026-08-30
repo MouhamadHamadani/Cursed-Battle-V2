@@ -10,6 +10,7 @@ test('registering a user creates a character with default stats', function () {
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'faction' => 'faction_2',
     ]);
 
     $response->assertRedirect(route('dashboard', absolute: false));
@@ -27,6 +28,7 @@ test('registering a user creates a character with default stats', function () {
     expect($character->strength)->toEqual(5);
     expect($character->defense)->toEqual(5);
     expect($character->agility)->toEqual(5);
+    expect($character->faction)->toEqual('faction_2');
     expect($character->hospitalized_until)->toBeNull();
 });
 
