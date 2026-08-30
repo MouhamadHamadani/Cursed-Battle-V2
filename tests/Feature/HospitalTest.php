@@ -90,11 +90,21 @@ test('a hospitalized character with energy can still work a shift and earn gold'
 
     expect($character->isHospitalized())->toBeTrue();
 
-    $result = app(WorkService::class)->work($character, $occupation);
+    // ADR-002 fork 2: hospital still gates combat only, so a shift starts.
+    $result = app(WorkService::class)->start($character, $occupation);
 
-    expect($result['gold_earned'])->toBeGreaterThan(0);
+    expect($result->energySpent)->toBe(8);
+    expect($character->refresh()->gold)->toBe(100); // not paid yet
+
+    // ADR-002 fork 3: still hospitalized when it lands, and that changes nothing.
+    $this->travel(6)->minutes();
+    app(WorkService::class)->resolvePending($character);
+
     $character->refresh();
-    expect($character->gold)->toBe(116);
+    expect($character->isHospitalized())->toBeTrue();
+    expect($character->gold)->toBe(116); // 100 + 8 x 2
+
+    $this->travelBack();
 });
 
 test('a hospitalized character with energy can still train a stat', function () {

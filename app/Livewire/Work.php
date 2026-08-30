@@ -34,10 +34,10 @@ class Work extends Component
         $occupation = Occupation::findOrFail($occupationId);
 
         try {
-            $result = app(WorkService::class)->work($this->character, $occupation);
+            $result = app(WorkService::class)->start($this->character, $occupation);
             unset($this->character);
             $this->dispatch('character-updated');
-            session()->flash('status', "You worked and earned {$result['gold_earned']} gold.");
+            session()->flash('status', "You begin a shift as a {$result->occupationName}.");
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
         }
