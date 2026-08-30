@@ -1,8 +1,8 @@
 # ADR-002: Timed Train & Work Sessions
 
-**Status:** Proposed (2026-08-30) — awaiting owner sign-off on §Tunables and the three flagged forks
+**Status:** Accepted (2026-08-30) — tunables accepted at their table defaults; all three flagged forks accepted as recommended
 **Date:** 2026-08-30
-**Deciders:** Mouhamad (project owner)
+**Deciders:** Mouhamad (project owner) — signed off as proposed, no changes.
 **Related:** [ADR-001](ADR-001-combat-hospital-leveling.md) — reuses its lazy-timestamp precedent (§Hospital) and leaves its combat/leveling tunables untouched.
 
 ---
