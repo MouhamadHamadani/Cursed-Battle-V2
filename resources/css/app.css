@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+/* V1 display faces — see tailwind.config.js fontFamily. */
+@font-face {
+    font-family: "UncialAntiqua";
+    src: url("../../public/font/UncialAntiqua-9mR7.ttf");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "NewRocker-Regular";
+    src: url("../../public/font/NewRocker-Regular.otf");
+    font-display: swap;
+}
+
+@layer utilities {
+    /* Used by the battle event log, which scrolls inside the result modal. */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
