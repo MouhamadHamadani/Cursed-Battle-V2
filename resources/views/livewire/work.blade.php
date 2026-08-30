@@ -1,73 +1,93 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Work') }}
-        </h2>
+        </x-label>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if (session('status'))
-                <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg">
-                    {{ session('status') }}
-                </div>
-            @endif
+            <x-flash />
 
-            @if (session('error'))
-                <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Energy') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->energy }} / {{ $this->character->max_energy }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Gold') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->gold }}</p>
-                        </div>
+            <x-dark-leather class="border border-yellow-700 p-6">
+                <div class="grid grid-cols-2 gap-6 text-center">
+                    <div>
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-bolt me-2"></i>{{ __('Energy') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
+                    </div>
+                    <div>
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->gold }}</x-label>
                     </div>
                 </div>
-            </div>
+            </x-dark-leather>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @if ($this->character->energy < 1)
+                {{-- Spent: V1's in-character blocking copy rather than "please wait". --}}
+                @php
+                    $spent = [
+                        'Thy arms hang heavy, traveller. No guild will take thee in this state.',
+                        'Thou hast given the day all thou hadst. Rest, and the strength returns.',
+                        'The workshop bars its door to the exhausted. Come again with vigour.',
+                        'Not a swing left in thee. Sit by the fire until thy wind comes back.',
+                        'Thy hands shake too badly for honest labour. Wait for the hour to turn.',
+                    ];
+                @endphp
+                <x-dark-wall class="border border-red-900 p-6 text-center">
+                    <i class="fa-duotone fa-solid fa-bed fa-2x text-red-500"></i>
+                    <x-label class="text-xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
+                </x-dark-wall>
+            @endif
+
+            <x-divider />
+
+            <div class="flex flex-wrap justify-center gap-6">
                 @foreach ($this->occupations as $occupation)
                     @php
                         $qualifies = $this->character->level >= $occupation->min_level
                             && ($occupation->max_level === null || $this->character->level <= $occupation->max_level);
                     @endphp
 
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                            <h3 class="text-lg font-semibold">{{ $occupation->name }}</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $occupation->description }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ __('Level') }} {{ $occupation->min_level }}&ndash;{{ $occupation->max_level ?? '∞' }}
-                            </p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ $occupation->gold_per_energy }} {{ __('gold/energy') }}
-                            </p>
+                    <x-dark-wall class="flex flex-col basis-full md:basis-[calc(50%-0.75rem)] border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
+                        <div class="text-center">
+                            <i class="fa-duotone fa-solid fa-hammer fa-2x {{ $qualifies ? 'text-yellow-500' : 'text-stone-600' }}"></i>
+                            <x-label class="text-2xl mt-3">{{ $occupation->name }}</x-label>
+                        </div>
 
+                        <p class="mt-3 font-sans text-sm text-stone-300">{{ $occupation->description }}</p>
+
+                        <div class="mt-3 space-y-1">
+                            <x-label class="text-sm text-stone-400">
+                                {{ __('Level') }} {{ $occupation->min_level }}&ndash;{{ $occupation->max_level ?? '∞' }}
+                            </x-label>
+                            <x-label class="text-sm">
+                                <span class="text-green-500">{{ $occupation->gold_per_energy }}</span>
+                                <span class="text-stone-400">{{ __('gold/energy') }}</span>
+                            </x-label>
+                        </div>
+
+                        <div class="mt-auto pt-5">
                             @if ($qualifies)
-                                <x-primary-button
+                                <x-button
+                                    class="w-full"
+                                    target="work"
                                     wire:click="work({{ $occupation->id }})"
                                     wire:loading.attr="disabled"
-                                    wire:target="work"
                                 >
                                     {{ __('Work a shift') }}
-                                </x-primary-button>
+                                </x-button>
                             @else
-                                <span class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-widest cursor-not-allowed">
-                                    {{ __('Locked') }}
-                                </span>
+                                <x-button class="w-full" disable>
+                                    <i class="fa-duotone fa-solid fa-lock me-2"></i>{{ __('Locked') }}
+                                </x-button>
                             @endif
                         </div>
-                    </div>
+                    </x-dark-wall>
                 @endforeach
             </div>
 
