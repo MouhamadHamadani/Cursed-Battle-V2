@@ -88,3 +88,43 @@ test('the acting character is not included in their own opponents list', functio
 
     expect($opponentIds)->not->toContain($character->id);
 });
+
+// The result modal's open state is entangled to $showResult (see
+// resources/views/components/dark-modal.blade.php), so a fight must both
+// produce a result and open the modal, and a failed attack must not.
+test('a resolved fight opens the result modal and renders the outcome banner', function () {
+    $attackerUser = User::factory()->create();
+    $attacker = Character::create([
+        'user_id' => $attackerUser->id,
+        'health' => 200,
+        'max_health' => 200,
+        'strength' => 1000,
+        'agility' => 5,
+    ]);
+
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'agility' => 0,
+    ]);
+
+    $this->actingAs($attackerUser);
+    $component = Livewire::test(Battle::class)->call('attack', $defender->id);
+
+    expect($component->get('showResult'))->toBeTrue();
+    $component->assertSee('Victory')->assertSee('Battle Result');
+});
+
+test('the result modal stays closed when the attack is rejected', function () {
+    $user = User::factory()->create();
+    Character::create([
+        'user_id' => $user->id,
+        'hospitalized_until' => now()->addMinutes(10),
+    ]);
+    $defender = Character::create(['user_id' => User::factory()->create()->id]);
+
+    $this->actingAs($user);
+    $component = Livewire::test(Battle::class)->call('attack', $defender->id);
+
+    expect($component->get('showResult'))->toBeFalse();
+    expect($component->get('lastFight'))->toBeEmpty();
+});

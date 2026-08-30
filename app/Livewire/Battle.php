@@ -19,6 +19,13 @@ class Battle extends Component
      */
     public array $lastFight = [];
 
+    /**
+     * Presentational only: whether the result modal is open. No game rule
+     * reads it — it exists because <x-dark-modal> entangles its open state
+     * to a Livewire property (the V1 pattern).
+     */
+    public bool $showResult = false;
+
     #[Computed]
     public function character()
     {
@@ -54,6 +61,7 @@ class Battle extends Component
             $defender = Character::findOrFail($defenderId);
             $result = app(CombatService::class)->resolve($this->character, $defender);
             $this->lastFight = $result->toArray();
+            $this->showResult = true;
             unset($this->character); // refresh computed (health/gold changed)
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
