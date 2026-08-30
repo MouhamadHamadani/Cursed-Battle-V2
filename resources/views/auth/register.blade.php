@@ -1,4 +1,11 @@
 <x-guest-layout>
+    {{-- Registration is the character-creation flow: a character with its
+         starting stats is forged the moment the account is created. --}}
+    <div class="text-center mb-6">
+        <x-label class="text-3xl text-yellow-500 text-shadow-lg shadow-yellow-600">{{ __('Forge Your Champion') }}</x-label>
+        <p class="mt-2 font-sans text-sm text-stone-300">{{ __('Name thyself, and a fighter shall be raised in thy stead.') }}</p>
+    </div>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -40,7 +47,7 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+            <a class="underline font-newRocker text-sm text-yellow-500 hover:text-yellow-300 focus:outline-none" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
