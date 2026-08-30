@@ -30,3 +30,43 @@
         scrollbar-width: none;
     }
 }
+
+/* V1's <x-divider> — a sprite rule with a decorative centrepiece. */
+.Divider {
+    height: 55px;
+    margin: -18px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.Divider:before,
+.Divider:after {
+    background: url("../../public/images/divider-sprite.png") repeat-x 50% 0;
+    content: "";
+    height: 55px;
+    position: absolute;
+    top: 0;
+}
+
+.Divider:before {
+    left: 0;
+    margin-right: 82px;
+    right: 50%;
+}
+
+.Divider:after {
+    left: 50%;
+    margin-left: 82px;
+    right: 0;
+}
+
+.Divider-rule {
+    background: url("../../public/images/divider-sprite.png") repeat-x 50% 100%;
+    border: 0;
+    height: 55px;
+    left: 50%;
+    margin: 0 0 0 -82px;
+    position: absolute;
+    top: 5px;
+    width: 164px;
+}
