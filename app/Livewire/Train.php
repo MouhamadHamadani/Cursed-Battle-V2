@@ -25,10 +25,10 @@ class Train extends Component
     public function train(string $stat): void
     {
         try {
-            $result = app(TrainingService::class)->train($this->character, $stat);
+            $result = app(TrainingService::class)->start($this->character, $stat);
             unset($this->character);
             $this->dispatch('character-updated');
-            session()->flash('status', ucfirst($result['stat']).' increased.');
+            session()->flash('status', 'You begin drilling '.ucfirst($result->stat).'.');
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
         }

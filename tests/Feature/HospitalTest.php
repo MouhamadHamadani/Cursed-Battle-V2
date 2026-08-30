@@ -107,11 +107,21 @@ test('a hospitalized character with energy can still train a stat', function () 
 
     expect($character->isHospitalized())->toBeTrue();
 
-    $result = app(TrainingService::class)->train($character, 'strength');
+    // ADR-002 fork 2: hospital still gates combat only, so a session starts.
+    app(TrainingService::class)->start($character, 'strength');
 
-    expect($result['character']->strength)->toBe(6);
     $character->refresh();
+    expect($character->activity_type)->toBe('train');
+
+    // ADR-002 fork 3: still hospitalized when it lands, and that changes nothing.
+    $this->travel(6)->minutes();
+    app(TrainingService::class)->resolvePending($character);
+
+    $character->refresh();
+    expect($character->isHospitalized())->toBeTrue();
     expect($character->strength)->toBe(6);
+
+    $this->travelBack();
 });
 
 test('GET /hospital returns 200 for an authenticated user with a character', function () {
