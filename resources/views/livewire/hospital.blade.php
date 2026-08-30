@@ -1,37 +1,67 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Hospital') }}
-        </h2>
+        </x-label>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             @if ($this->character->isHospitalized())
-                <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-                    {{ __('You are hospitalized.') }}
-                </div>
+                @php
+                    // V1's in-character blocking copy, not a plain "please wait".
+                    $bedside = [
+                        'The surgeon bids thee lie still. Thy wounds are not yet closed.',
+                        'Broth and bandages, traveller. The field will keep until thou art whole.',
+                        'Thou wert carried here senseless. Be grateful, and be patient.',
+                        'The bonesetter has done his work. Now the hours must do theirs.',
+                        'No blade for thee today. Rest, and let the flesh knit.',
+                    ];
+                @endphp
 
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 space-y-3">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('You will be released :time.', ['time' => $this->character->hospitalized_until->diffForHumans()]) }}
-                        </p>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Health') }}</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $this->character->health }} / {{ $this->character->max_health }}</p>
-                        </div>
+                <x-dark-leather class="border border-red-900 p-10 text-center">
+                    <i class="fa-duotone fa-solid fa-kit-medical fa-4x text-red-500"></i>
+
+                    <x-label class="font-uncialAntiqua text-4xl text-red-500 mt-5">{{ __('You are hospitalized.') }}</x-label>
+
+                    <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+
+                    <x-label class="text-xl text-yellow-500">{{ $bedside[array_rand($bedside)] }}</x-label>
+
+                    <x-label class="text-2xl text-red-500 mt-5">
+                        <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>
+                        {{ __('You will be released :time.', ['time' => $this->character->hospitalized_until->diffForHumans()]) }}
+                    </x-label>
+
+                    <div class="mt-8">
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
                     </div>
-                </div>
+                </x-dark-leather>
             @else
-                <div class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg">
-                    {{ __('You are healthy and ready to fight.') }}
-                </div>
+                <x-dark-leather class="border border-yellow-700 p-10 text-center">
+                    <i class="fa-duotone fa-solid fa-shield-halved fa-4x text-green-500"></i>
 
-                <a href="{{ route('battle') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    {{ __('Go to Battle') }}
-                </a>
+                    <x-label class="font-uncialAntiqua text-4xl text-green-500 mt-5">{{ __('You are healthy and ready to fight.') }}</x-label>
+
+                    <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+
+                    <div class="mb-8">
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
+                        </x-label>
+                        <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                    </div>
+
+                    <a href="{{ route('battle') }}" class="inline-block">
+                        <x-button type="button">
+                            <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Go to Battle') }}
+                        </x-button>
+                    </a>
+                </x-dark-leather>
             @endif
 
         </div>
