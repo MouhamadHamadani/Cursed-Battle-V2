@@ -1,8 +1,9 @@
-@php
-    // View-only read of the authed character for the V1-style stat strip.
-    $navCharacter = Auth::user()?->character;
-@endphp
-
+{{--
+    V1 puts a live XP/level/gold/health/energy strip in this bar. Not ported:
+    the layout renders outside every Livewire root, so the numbers would go
+    stale the moment a player worked, trained or fought, and keeping them in
+    sync needs its own Livewire component. Each page shows its own figures.
+--}}
 <nav x-data="{ open: false }">
     <x-dark-leather class="border-b border-yellow-700">
         <!-- Primary Navigation Menu -->
@@ -77,31 +78,6 @@
                 </div>
             </div>
 
-            <!-- Character stat strip (V1's nav bar) -->
-            @if ($navCharacter)
-                <x-dark-wall class="flex flex-wrap items-center justify-center gap-5 mb-3 p-3 border border-yellow-700">
-                    <div class="flex flex-1 justify-center gap-x-2 items-center" title="{{ __('XP') }}">
-                        <i class="fa-duotone fa-solid fa-star text-yellow-500"></i>
-                        <x-label>{{ $navCharacter->xp }}</x-label>
-                    </div>
-                    <div class="flex flex-1 justify-center gap-x-2 items-center" title="{{ __('Level') }}">
-                        <i class="fa-duotone fa-solid fa-shield-halved text-yellow-500"></i>
-                        <x-label>{{ $navCharacter->level }}</x-label>
-                    </div>
-                    <div class="flex flex-1 justify-center gap-x-2 items-center" title="{{ __('Gold') }}">
-                        <i class="fa-duotone fa-solid fa-coins text-yellow-500"></i>
-                        <x-label>{{ $navCharacter->gold }}</x-label>
-                    </div>
-                    <div class="flex flex-1 justify-center gap-x-2 items-center" title="{{ __('Health') }}">
-                        <i class="fa-duotone fa-solid fa-heart text-red-500"></i>
-                        <x-label>{{ $navCharacter->health }} / {{ $navCharacter->max_health }}</x-label>
-                    </div>
-                    <div class="flex flex-1 justify-center gap-x-2 items-center" title="{{ __('Energy') }}">
-                        <i class="fa-duotone fa-solid fa-bolt text-yellow-700"></i>
-                        <x-label>{{ $navCharacter->energy }} / {{ $navCharacter->max_energy }}</x-label>
-                    </div>
-                </x-dark-wall>
-            @endif
         </div>
 
         <!-- Responsive Navigation Menu -->
