@@ -48,6 +48,7 @@ class Market extends Component
         try {
             app(MarketService::class)->buy($this->character, $item);
             unset($this->character, $this->ownedItemIds, $this->inventory);
+            $this->dispatch('character-updated');
             session()->flash('status', "Purchased {$item->name}.");
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
@@ -65,6 +66,7 @@ class Market extends Component
         try {
             app(MarketService::class)->equip($this->character, $item);
             unset($this->character, $this->inventory);
+            $this->dispatch('character-updated');
             session()->flash('status', "Equipped {$item->name}.");
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
@@ -81,6 +83,7 @@ class Market extends Component
         try {
             app(MarketService::class)->unequip($this->character, $item);
             unset($this->character, $this->inventory);
+            $this->dispatch('character-updated');
             session()->flash('status', "Unequipped {$item->name}.");
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());

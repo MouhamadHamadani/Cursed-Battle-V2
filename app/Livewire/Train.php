@@ -27,6 +27,7 @@ class Train extends Component
         try {
             $result = app(TrainingService::class)->train($this->character, $stat);
             unset($this->character);
+            $this->dispatch('character-updated');
             session()->flash('status', ucfirst($result['stat']).' increased.');
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());

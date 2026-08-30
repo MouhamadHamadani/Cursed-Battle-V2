@@ -20,7 +20,7 @@
             <x-flash />
 
             <x-dark-leather class="border border-yellow-700 p-6">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
                     @foreach ($stats as $key => $stat)
                         <div>
                             <x-label class="text-yellow-500">
@@ -29,12 +29,6 @@
                             <x-label class="text-3xl">{{ $this->character->{$key} }}</x-label>
                         </div>
                     @endforeach
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-bolt me-2"></i>{{ __('Energy') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
-                    </div>
                 </div>
             </x-dark-leather>
 

@@ -10,23 +10,6 @@
 
             <x-flash />
 
-            <x-dark-leather class="border border-yellow-700 p-6">
-                <div class="grid grid-cols-2 gap-6 text-center">
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-bolt me-2"></i>{{ __('Energy') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
-                    </div>
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->gold }}</x-label>
-                    </div>
-                </div>
-            </x-dark-leather>
-
             @if ($this->character->energy < 1)
                 {{-- Spent: V1's in-character blocking copy rather than "please wait". --}}
                 @php

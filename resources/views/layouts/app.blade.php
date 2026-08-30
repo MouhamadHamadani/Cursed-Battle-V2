@@ -25,6 +25,13 @@
         <x-dark-wall class="min-h-screen bg-black">
             @include('layouts.navigation')
 
+            {{-- Global character strip. @persist keeps the same component
+                 instance across wire:navigate; it still re-renders on the
+                 'character-updated' event any action dispatches. --}}
+            @persist('status-bar')
+                <livewire:status-bar />
+            @endpersist
+
             <!-- Page Heading -->
             @isset($header)
                 <x-dark-leather class="border-y border-yellow-700">

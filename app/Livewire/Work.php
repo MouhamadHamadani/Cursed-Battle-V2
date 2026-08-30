@@ -36,6 +36,7 @@ class Work extends Component
         try {
             $result = app(WorkService::class)->work($this->character, $occupation);
             unset($this->character);
+            $this->dispatch('character-updated');
             session()->flash('status', "You worked and earned {$result['gold_earned']} gold.");
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());

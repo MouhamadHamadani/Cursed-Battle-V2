@@ -27,25 +27,6 @@
 
             <x-flash />
 
-            <x-dark-leather class="border border-yellow-700 p-6">
-                <div class="grid grid-cols-2 gap-6 text-center">
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->gold }}</x-label>
-                    </div>
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-shield-halved me-2"></i>{{ __('Level') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->level }}</x-label>
-                    </div>
-                </div>
-            </x-dark-leather>
-
-            <x-divider />
-
             {{-- Shop --}}
             <div>
                 <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">

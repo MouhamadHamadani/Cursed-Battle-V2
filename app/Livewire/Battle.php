@@ -62,6 +62,7 @@ class Battle extends Component
             $result = app(CombatService::class)->resolve($this->character, $defender);
             $this->lastFight = $result->toArray();
             $this->showResult = true;
+            $this->dispatch('character-updated');
             unset($this->character); // refresh computed (health/gold changed)
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
