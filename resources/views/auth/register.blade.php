@@ -47,7 +47,7 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline font-newRocker text-sm text-yellow-500 hover:text-yellow-300 focus:outline-none" href="{{ route('login') }}">
+            <a class="underline font-newRocker text-sm text-yellow-500 hover:text-yellow-300 focus:outline-none" href="{{ route('login') }}" wire:navigate>
                 {{ __('Already registered?') }}
             </a>
 

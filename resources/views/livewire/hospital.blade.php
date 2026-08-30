@@ -56,7 +56,7 @@
                         <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
                     </div>
 
-                    <a href="{{ route('battle') }}" class="inline-block">
+                    <a href="{{ route('battle') }}" wire:navigate class="inline-block">
                         <x-button type="button">
                             <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Go to Battle') }}
                         </x-button>

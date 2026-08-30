@@ -24,7 +24,7 @@
     <body class="font-newRocker antialiased text-white">
         <x-dark-wall class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-black">
             <div>
-                <a href="/">
+                <a href="/" wire:navigate>
                     <x-application-logo class="w-40 h-40" />
                 </a>
             </div>

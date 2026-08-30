@@ -12,18 +12,18 @@
 
         <div class="flex justify-center gap-4 mt-8">
             @auth
-                <a href="{{ route('dashboard') }}">
+                <a href="{{ route('dashboard') }}" wire:navigate>
                     <x-button type="button">
                         <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Continue') }}
                     </x-button>
                 </a>
             @else
-                <a href="{{ route('login') }}">
+                <a href="{{ route('login') }}" wire:navigate>
                     <x-button type="button">{{ __('Log in') }}</x-button>
                 </a>
 
                 @if (Route::has('register'))
-                    <a href="{{ route('register') }}">
+                    <a href="{{ route('register') }}" wire:navigate>
                         <x-secondary-button>{{ __('Register') }}</x-secondary-button>
                     </a>
                 @endif

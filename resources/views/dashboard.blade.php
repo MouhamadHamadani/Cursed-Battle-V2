@@ -19,7 +19,7 @@
                     ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.')],
                     ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.')],
                 ] as $link)
-                    <a href="{{ route($link['route']) }}">
+                    <a href="{{ route($link['route']) }}" wire:navigate>
                         <x-dark-wall class="h-full border border-yellow-700 p-6 text-center hover:border-yellow-500 transition duration-300">
                             <i class="fa-duotone fa-solid {{ $link['icon'] }} fa-3x text-yellow-500"></i>
                             <x-label class="text-2xl mt-3">{{ $link['label'] }}</x-label>

@@ -12,29 +12,31 @@
                 <div class="flex items-center">
                     <!-- Logo -->
                     <div class="shrink-0 flex items-center">
-                        <a href="{{ route('dashboard') }}" title="{{ config('app.name', 'Cursed Battle') }}">
-                            <x-application-logo class="block h-12 w-auto" />
+                        <a href="{{ route('dashboard') }}" wire:navigate title="{{ config('app.name', 'Cursed Battle') }}">
+                            @persist('logo')
+                                <x-application-logo class="block h-12 w-auto" />
+                            @endpersist
                         </a>
                     </div>
 
                     <!-- Navigation Links -->
                     <div class="hidden space-x-8 sm:ms-10 sm:flex">
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                             {{ __('Dashboard') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('work')" :active="request()->routeIs('work')">
+                        <x-nav-link :href="route('work')" :active="request()->routeIs('work')" wire:navigate>
                             {{ __('Work') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('train')" :active="request()->routeIs('train')">
+                        <x-nav-link :href="route('train')" :active="request()->routeIs('train')" wire:navigate>
                             {{ __('Train') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('market')" :active="request()->routeIs('market')">
+                        <x-nav-link :href="route('market')" :active="request()->routeIs('market')" wire:navigate>
                             {{ __('Market') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('battle')" :active="request()->routeIs('battle')">
+                        <x-nav-link :href="route('battle')" :active="request()->routeIs('battle')" wire:navigate>
                             {{ __('Battle') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')">
+                        <x-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')" wire:navigate>
                             {{ __('Hospital') }}
                         </x-nav-link>
                     </div>
@@ -51,7 +53,7 @@
                         </x-slot>
 
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
+                            <x-dropdown-link :href="route('profile.edit')" wire:navigate>
                                 {{ __('Profile') }}
                             </x-dropdown-link>
 
@@ -83,22 +85,22 @@
         <!-- Responsive Navigation Menu -->
         <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
             <div class="pt-2 pb-3 space-y-1">
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('work')" :active="request()->routeIs('work')">
+                <x-responsive-nav-link :href="route('work')" :active="request()->routeIs('work')" wire:navigate>
                     {{ __('Work') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('train')" :active="request()->routeIs('train')">
+                <x-responsive-nav-link :href="route('train')" :active="request()->routeIs('train')" wire:navigate>
                     {{ __('Train') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('market')" :active="request()->routeIs('market')">
+                <x-responsive-nav-link :href="route('market')" :active="request()->routeIs('market')" wire:navigate>
                     {{ __('Market') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('battle')" :active="request()->routeIs('battle')">
+                <x-responsive-nav-link :href="route('battle')" :active="request()->routeIs('battle')" wire:navigate>
                     {{ __('Battle') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')">
+                <x-responsive-nav-link :href="route('hospital')" :active="request()->routeIs('hospital')" wire:navigate>
                     {{ __('Hospital') }}
                 </x-responsive-nav-link>
             </div>
@@ -111,7 +113,7 @@
                 </div>
 
                 <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('profile.edit')">
+                    <x-responsive-nav-link :href="route('profile.edit')" wire:navigate>
                         {{ __('Profile') }}
                     </x-responsive-nav-link>
 
