@@ -1,4 +1,4 @@
-@props(['maxWidth' => '2xl'])
+@props(['maxWidth' => '2xl', 'show' => null])
 
 @php
 $maxWidth = [
@@ -12,8 +12,17 @@ $maxWidth = [
 ][$maxWidth];
 @endphp
 
+{{--
+    Open state comes from a Livewire property via wire:model (V1's usage), or
+    from a plain Alpine expression via `show` when the component has no
+    property to bind — see the battle result modal.
+--}}
 <div
-    x-data="{ show: @entangle($attributes->wire('model')).live }"
+    @if ($show !== null)
+        x-data="{ show: {{ $show }} }"
+    @else
+        x-data="{ show: @entangle($attributes->wire('model')).live }"
+    @endif
     x-on:close.stop="show = false"
     x-on:keydown.escape.window="show = false"
     x-show="show"
