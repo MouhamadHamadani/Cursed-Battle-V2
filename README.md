@@ -68,11 +68,14 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 ## How to play
 
 1. **Register** — create a user account. A character is auto-created with default stats (level 1, 100 gold, 100 HP, 10 energy, and 5 in each of strength/defense/agility).
-2. **Work** — `/work` spends *all* your current energy at a job to earn gold (the starting job, Grave Digger, pays 2 gold per energy; higher-tier jobs pay more but gate on level). Also a small XP trickle — this is the core economy loop.
-3. **Train** — `/train` spends 5 energy to raise one stat by 1 (strength, defense, or agility). Permanent gains; no cap per level.
+2. **Work** — `/work` puts you on a *shift*. Your whole energy bar is spent the moment you clock on, and the gold plus a small XP trickle land when the shift ends (5 minutes at level 1, longer as you rise). The starting job, Grave Digger, pays 2 gold per energy; higher-tier jobs pay more but gate on level. This is the core economy loop.
+3. **Train** — `/train` puts you in the yard for a *drill*. 5 energy is spent up front and the +1 to strength, defense or agility lands when the drill finishes (5 minutes at level 1, longer as you rise). Permanent gains; no cap per level.
+   - **While a shift or drill is running you are locked out of everything else** — no second session, no attacking, no market. Thou art at thy labours; come back when the work is done. A countdown shows in the status bar and on the Work/Train page.
+   - Nothing needs collecting: the result lands on its own the next time a page paints. Walking away just means seeing it later.
+   - Being *busy* does not protect you — others can still attack you mid-shift. Only the hospital blocks incoming attacks.
 4. **Market** — `/market` browse and buy weapons/armor, equip them. Gear carries stat bonuses. Costs gold and has level requirements.
 5. **Battle** — `/battle` attack another character. Fight resolves instantly in up to 10 rounds. Win = steal 10% of their gold + XP, lose = hospitalized for 30 minutes.
-6. **Hospital** — `/hospital` view remaining cooldown. While hospitalized, you can't fight (both attacking and being attacked are blocked). Work and Train stay available.
+6. **Hospital** — `/hospital` view remaining cooldown. While hospitalized, you can't fight (both attacking and being attacked are blocked). Work and Train stay available, and a shift you were already on runs to completion normally.
 7. **Level up** — accumulate XP via Work trickle and combat wins. Level thresholds are `level × 100` XP. Leveling up heals you fully, restores energy, and raises your max HP/energy caps.
 
 ## Game rules quick-reference
@@ -85,17 +88,20 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 | Gold steal per win | 10% of loser's gold |
 | XP per level-up | Level × 100 XP threshold |
 | Anti-farming | XP halved if winner's level > loser's level + 5 |
+| Train session | 5 min + 30s per level above 1 (5m at L1 → 29m30s at L50) |
+| Work session | 5 min + 60s per level above 1 (5m at L1 → 54m at L50) |
+| While busy | blocks Train, Work, Battle (as attacker) and Market — **not** being attacked |
 
-For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md).
+For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md). For the session pacing model (duration formula, lazy resolution, the full lock), see [.claude/adr/ADR-002-timed-sessions.md](.claude/adr/ADR-002-timed-sessions.md).
 
 ## Testing
 
-Run the full test suite (94 Pest tests, focused on service-layer logic and economy edges):
+Run the full test suite (133 Pest tests, focused on service-layer logic and economy edges):
 ```bash
 php artisan test
 ```
 
-Tests cover combat math (dodge, damage floor, KO vs tiebreak, turn order, anti-farming), economy boundaries (level gates, exact-gold purchases, item swaps), and regen atomicity. See `tests/Feature/` for specifics.
+Tests cover combat math (dodge, damage floor, KO vs tiebreak, turn order, anti-farming), economy boundaries (level gates, exact-gold purchases, item swaps), regen atomicity, and the timed-session lifecycle (duration table, nothing paid before the timer, exactly-once payout under concurrent resolves, snapshot payouts that survive the occupation being retuned or deleted mid-shift, and the busy lock on every surface). See `tests/Feature/` for specifics.
 
 ## Project status
 
@@ -108,6 +114,8 @@ Tests cover combat math (dodge, damage floor, KO vs tiebreak, turn order, anti-f
 - ✓ Battle (instant-resolve PvP + combat logs)
 - ✓ Hospital (30-min cooldown)
 - ✓ Leveling (XP thresholds, pool scaling)
+- ✓ Timed Train/Work sessions with the full busy lock (ADR-002)
+- ✓ SPA navigation (`wire:navigate`) + persistent status bar
 
 **Not yet built** (deliberately deferred per project scope):
 - Quests, tournaments, clans
@@ -121,6 +129,7 @@ Tests cover combat math (dodge, damage floor, KO vs tiebreak, turn order, anti-f
 
 - **CLAUDE.md** — project identity, stack lock, architecture principle, MVP scope
 - `.claude/adr/ADR-001-*` — combat formula, hospital, leveling spec + tunables
+- `.claude/adr/ADR-002-*` — timed Train/Work sessions: duration formula, storage shape, lazy resolution, the full lock
 - `.claude/plans/` — phase-by-phase build notes (Phases 0–9)
 
 ## Tech docs
