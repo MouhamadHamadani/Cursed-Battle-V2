@@ -1,0 +1,215 @@
+<?php
+
+use App\Livewire\Battle;
+use App\Livewire\Market;
+use App\Livewire\StatusBar;
+use App\Livewire\Train;
+use App\Livewire\Work;
+use App\Models\Character;
+use App\Models\Item;
+use App\Models\Occupation;
+use App\Models\User;
+use App\Services\TrainingService;
+use App\Services\WorkService;
+use Livewire\Livewire;
+
+function actor(array $overrides = []): array
+{
+    $user = User::factory()->create();
+    $character = Character::create(array_merge([
+        'user_id' => $user->id,
+        'level' => 1,
+        'energy' => 10,
+        'max_energy' => 10,
+        'gold' => 1000,
+        'health' => 100,
+        'max_health' => 100,
+        'strength' => 5,
+    ], $overrides));
+
+    return [$user, $character];
+}
+
+function digging(): Occupation
+{
+    return Occupation::create([
+        'name' => 'Grave Digger',
+        'description' => 'Dig.',
+        'min_level' => 1,
+        'max_level' => 5,
+        'gold_per_energy' => 2,
+    ]);
+}
+
+// ---------------------------------------------------------------------------
+// Starting a session through the components.
+// ---------------------------------------------------------------------------
+
+test('the work component starts a shift and flashes that it has begun, not an outcome', function () {
+    [$user, $character] = actor();
+    $job = digging();
+
+    $this->actingAs($user);
+    Livewire::test(Work::class)
+        ->call('work', $job->id)
+        ->assertSee('You begin a shift as a Grave Digger.');
+
+    $character->refresh();
+    expect($character->activity_type)->toBe('work');
+    expect($character->gold)->toEqual(1000); // not paid yet
+});
+
+test('the train component starts a drill and flashes that it has begun', function () {
+    [$user, $character] = actor();
+
+    $this->actingAs($user);
+    Livewire::test(Train::class)
+        ->call('train', 'strength')
+        ->assertSee('You begin drilling Strength.');
+
+    $character->refresh();
+    expect($character->activity_type)->toBe('train');
+    expect($character->strength)->toEqual(5); // not applied yet
+});
+
+// ---------------------------------------------------------------------------
+// The busy refusal has to reach the UI in V1's voice, on every locked surface.
+// ---------------------------------------------------------------------------
+
+test('attacking while busy flashes the in-character refusal, not a raw error', function () {
+    [$user, $character] = actor();
+    $defender = Character::create(['user_id' => User::factory()->create()->id, 'level' => 1]);
+
+    app(WorkService::class)->start($character, digging());
+
+    $this->actingAs($user);
+    Livewire::test(Battle::class)
+        ->call('attack', $defender->id)
+        ->assertSee('Thou canst not take up arms while at thy labours.');
+});
+
+test('buying while busy flashes the in-character refusal, not a raw error', function () {
+    [$user, $character] = actor();
+    $item = Item::create([
+        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'min_level' => 1, 'cost' => 50,
+    ]);
+
+    app(TrainingService::class)->start($character, 'strength');
+
+    $this->actingAs($user);
+    Livewire::test(Market::class)
+        ->call('buy', $item->id)
+        ->assertSee('The merchants will not serve thee while thou art at the training yard.');
+    expect($character->refresh()->gold)->toEqual(1000);
+});
+
+test('starting a second session while busy flashes the in-character refusal', function () {
+    [$user, $character] = actor(['energy' => 10]);
+
+    app(TrainingService::class)->start($character, 'strength');
+
+    $this->actingAs($user);
+    Livewire::test(Train::class)
+        ->call('train', 'defense')
+        ->assertSee('Thou art already at the training yard. Finish before taking up another task.');
+});
+
+// ---------------------------------------------------------------------------
+// Lazy resolution: the result lands on the next paint, with no click.
+// ---------------------------------------------------------------------------
+
+test('mounting the work page resolves a finished shift without any click', function () {
+    [$user, $character] = actor();
+    app(WorkService::class)->start($character, digging());
+
+    $this->travel(6)->minutes();
+
+    $this->actingAs($user);
+    Livewire::test(Work::class);
+
+    $character->refresh();
+    expect($character->gold)->toEqual(1020);
+    expect($character->activity_type)->toBeNull();
+
+    $this->travelBack();
+});
+
+test('mounting the train page resolves a finished drill without any click', function () {
+    [$user, $character] = actor();
+    app(TrainingService::class)->start($character, 'strength');
+
+    $this->travel(6)->minutes();
+
+    $this->actingAs($user);
+    Livewire::test(Train::class);
+
+    $character->refresh();
+    expect($character->strength)->toEqual(6);
+    expect($character->activity_type)->toBeNull();
+
+    $this->travelBack();
+});
+
+// ---------------------------------------------------------------------------
+// The status-bar badge: it shows, and it clears itself once resolved.
+// ---------------------------------------------------------------------------
+
+test('busy and hospitalized badges both render, in their own row, when a character is somehow both', function () {
+    // Not reachable via the game loop (ADR-002 fork 3 means a shift just runs
+    // to completion), but a character CAN be attacked mid-shift, so the pair
+    // must at least look sane.
+    [$user, $character] = actor();
+    app(WorkService::class)->start($character, digging());
+    $character->update(['hospitalized_until' => now()->addMinutes(30)]);
+
+    expect($character->refresh()->isBusy())->toBeTrue();
+    expect($character->isHospitalized())->toBeTrue();
+
+    $this->actingAs($user);
+
+    Livewire::test(StatusBar::class)
+        ->assertSee('At thy labours')          // busy badge
+        ->assertSee('minutes from now')        // hospital badge
+        ->assertSee('basis-full', false);      // both sit on their own wrapped row
+});
+
+test('the status bar badge clears itself when the countdown reports completion', function () {
+    [$user, $character] = actor();
+    app(WorkService::class)->start($character, digging());
+
+    $this->actingAs($user);
+    $component = Livewire::test(StatusBar::class)->assertSee('At thy labours');
+
+    $this->travel(6)->minutes();
+
+    // What <x-activity-countdown> dispatches when it hits zero.
+    $component->dispatch('activity-completed')
+        ->assertDontSee('At thy labours')
+        ->assertDispatched('character-updated');
+
+    $character->refresh();
+    expect($character->gold)->toEqual(1020); // the countdown triggered the real resolve
+    expect($character->activity_type)->toBeNull();
+
+    $this->travelBack();
+});
+
+test('the work page and the status bar agree on whether a session is running', function () {
+    [$user, $character] = actor();
+    app(WorkService::class)->start($character, digging());
+
+    $this->actingAs($user);
+
+    // Both surfaces read the same row, so both show the lock.
+    Livewire::test(StatusBar::class)->assertSee('At thy labours');
+    Livewire::test(Work::class)->assertSee('Busy');
+
+    $this->travel(6)->minutes();
+
+    // Once resolved, neither shows it — and the page resolves on mount.
+    Livewire::test(Work::class)->assertDontSee('Busy');
+    Livewire::test(StatusBar::class)->assertDontSee('At thy labours');
+
+    $this->travelBack();
+});
