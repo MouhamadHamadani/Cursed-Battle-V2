@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\EnsureCharacterExists;
 use App\Livewire\Battle;
+use App\Livewire\FactionSelect;
 use App\Livewire\Hospital;
 use App\Livewire\Market;
 use App\Livewire\Train;
@@ -12,15 +14,22 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Step two of character creation — reachable with no character, which is
+// exactly the state EnsureCharacterExists bounces everything else out of.
+Route::get('/faction', FactionSelect::class)->middleware(['auth', 'verified'])->name('faction.select');
 
-Route::get('/work', Work::class)->middleware(['auth', 'verified'])->name('work');
-Route::get('/train', Train::class)->middleware(['auth', 'verified'])->name('train');
-Route::get('/market', Market::class)->middleware(['auth', 'verified'])->name('market');
-Route::get('/battle', Battle::class)->middleware(['auth', 'verified'])->name('battle');
-Route::get('/hospital', Hospital::class)->middleware(['auth', 'verified'])->name('hospital');
+// Everything past this point dereferences a character.
+Route::middleware(['auth', 'verified', EnsureCharacterExists::class])->group(function () {
+    Route::get('/home', function () {
+        return view('home');
+    })->name('home');
+
+    Route::get('/work', Work::class)->name('work');
+    Route::get('/train', Train::class)->name('train');
+    Route::get('/market', Market::class)->name('market');
+    Route::get('/battle', Battle::class)->name('battle');
+    Route::get('/hospital', Hospital::class)->name('hospital');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

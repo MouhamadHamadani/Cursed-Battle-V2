@@ -250,6 +250,14 @@ class CombatService
         $attacker->health = max(0, $hp['attacker']);
         $defender->health = max(0, $hp['defender']);
 
+        // Committing to a fight ends the search that led to it, so the next
+        // reveal is free again (OpponentService prices off these two columns).
+        // Done here rather than in the caller because resolve() is the single
+        // entry point to combat — every path in gets the reset. Only the
+        // attacker's search resets: the defender never chose this fight.
+        $attacker->opponent_id = null;
+        $attacker->opponent_rerolls = 0;
+
         $winner = $winnerKey === 'attacker' ? $attacker : $defender;
         $loser = $winnerKey === 'attacker' ? $defender : $attacker;
 

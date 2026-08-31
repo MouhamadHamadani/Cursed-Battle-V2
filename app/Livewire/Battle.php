@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Character;
 use App\Services\CombatService;
 use App\Services\GameActionException;
+use App\Services\OpponentService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -26,47 +27,78 @@ class Battle extends Component
      */
     public bool $showResult = false;
 
+    /**
+     * Queried directly rather than via auth()->user()->character: that
+     * relation is cached on the User instance, and both CombatService and
+     * OpponentService write through their own freshly-locked models — the
+     * cached one would still render pre-fight gold and health.
+     */
     #[Computed]
-    public function character()
+    public function character(): Character
     {
-        return auth()->user()->character;
+        return Character::firstWhere('user_id', auth()->id());
     }
 
     /**
-     * Attackable characters: everyone except self and anyone currently
-     * hospitalized. Eager-load user to avoid N+1 when the view resolves
-     * each opponent's display name (characters have no name column).
+     * The one revealed mark, read from the character row — not from component
+     * state, so a refresh shows the same face rather than a free new one.
      */
     #[Computed]
-    public function opponents()
+    public function opponent(): ?Character
     {
-        return Character::with('user')
-            ->whereKeyNot($this->character->id)
-            ->where(function ($query) {
-                $query->whereNull('hospitalized_until')
-                    ->orWhere('hospitalized_until', '<=', now());
-            })
-            ->get();
+        return app(OpponentService::class)->current($this->character);
+    }
+
+    /** Gold the next search costs: 0 for the first, escalating per re-roll. */
+    #[Computed]
+    public function searchCost(): int
+    {
+        return app(OpponentService::class)->cost($this->character);
     }
 
     /**
-     * Attack the given defender. All game rules (self-attack, hospitalized,
-     * health) are re-validated server-side inside CombatService — this
-     * action's $defenderId is untrusted client input; the button list is
-     * not the security boundary.
+     * Reveal an opponent, or reject the current one for another. The price
+     * and every eligibility rule are decided server-side in OpponentService;
+     * this action carries no arguments to trust.
      */
-    public function attack(int $defenderId): void
+    public function search(): void
     {
         try {
-            $defender = Character::findOrFail($defenderId);
-            $result = app(CombatService::class)->resolve($this->character, $defender);
-            $this->lastFight = $result->toArray();
-            $this->showResult = true;
-            $this->dispatch('character-updated');
-            unset($this->character); // refresh computed (health/gold changed)
+            app(OpponentService::class)->find($this->character);
+            $this->refreshState();
         } catch (GameActionException $e) {
             session()->flash('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Attack the revealed opponent. The defender is read from the character
+     * row rather than passed in, so there is no id to tamper with; every
+     * game rule is still re-validated inside CombatService.
+     */
+    public function attack(): void
+    {
+        try {
+            $opponent = app(OpponentService::class)->current($this->character);
+
+            if ($opponent === null) {
+                throw new GameActionException('Seek a mark before thou swingest.');
+            }
+
+            $result = app(CombatService::class)->resolve($this->character, $opponent);
+            $this->lastFight = $result->toArray();
+            $this->showResult = true;
+            $this->refreshState();
+        } catch (GameActionException $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    /** Drop every computed cache and tell the status bar to re-read. */
+    private function refreshState(): void
+    {
+        unset($this->character, $this->opponent, $this->searchCost);
+        $this->dispatch('character-updated');
     }
 
     public function render()

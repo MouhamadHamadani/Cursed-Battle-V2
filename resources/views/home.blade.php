@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
         <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
-            {{ __('Dashboard') }}
+            {{ __('Home') }}
         </x-label>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
             <x-dark-leather class="border border-yellow-700 p-6">
-                <livewire:dashboard />
+                <livewire:home />
             </x-dark-leather>
 
             {{-- Quick links to the four places a character can spend a turn. --}}

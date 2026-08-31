@@ -7,8 +7,14 @@ use App\Services\ActivityService;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
-class Dashboard extends Component
+class Home extends Component
 {
+    /**
+     * Presentational only: <x-dark-modal> entangles a boolean, and the
+     * faction detail view is a modal like Battle's result.
+     */
+    public bool $showFaction = false;
+
     /** Lazy resolution point (ADR-002 §2): a finished session lands on page load. */
     public function mount(): void
     {
@@ -35,8 +41,15 @@ class Dashboard extends Component
 
     public function render()
     {
-        return view('livewire.dashboard', [
-            'character' => $this->character(),
+        $character = $this->character();
+
+        return view('livewire.home', [
+            'character' => $character,
+            // Null means "don't show it" — the count is a live query, but
+            // whether players see it at all is still an open call (config/game.php).
+            'factionCount' => $character && config('game.faction_headcount')
+                ? Character::where('faction', $character->faction)->count()
+                : null,
         ]);
     }
 }

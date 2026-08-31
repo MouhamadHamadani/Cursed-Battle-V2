@@ -1,22 +1,34 @@
 <?php
 
+use App\Livewire\FactionSelect;
 use App\Models\Character;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
-test('registering a user creates a character with default stats', function () {
-    $response = $this->post('/register', [
+test('registering a user does not create a character yet', function () {
+    $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'faction' => 'faction_2',
     ]);
 
-    $response->assertRedirect(route('dashboard', absolute: false));
-
     $user = User::where('email', 'test@example.com')->firstOrFail();
-    $character = $user->character;
+
+    expect($user->character)->toBeNull();
+});
+
+test('confirming a faction creates the character with default stats', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(FactionSelect::class)
+        ->call('previewFaction', 'faction_2')
+        ->call('confirm')
+        ->assertRedirect(route('home'));
+
+    $character = $user->fresh()->character;
 
     expect($character)->not->toBeNull();
     expect($character->level)->toEqual(1);

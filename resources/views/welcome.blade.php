@@ -12,7 +12,7 @@
 
         <div class="flex justify-center gap-4 mt-8">
             @auth
-                <a href="{{ route('dashboard') }}" wire:navigate>
+                <a href="{{ route('home') }}" wire:navigate>
                     <x-button type="button">
                         <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Continue') }}
                     </x-button>

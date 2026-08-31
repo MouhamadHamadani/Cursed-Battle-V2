@@ -16,6 +16,26 @@ class Character extends Model
     public const FACTIONS = ['faction_1', 'faction_2'];
 
     /**
+     * Placeholder display copy. Final naming is deliberately undecided
+     * (CLAUDE.md) — the generic keys stay in the DB and these two methods are
+     * the only place a faction is worded, so renaming later touches nothing
+     * else. Both the faction-select page and Home read from here.
+     */
+    public static function factionLabel(string $faction): string
+    {
+        return __('Faction :number', ['number' => str_replace('faction_', '', $faction)]);
+    }
+
+    public static function factionDescription(string $faction): string
+    {
+        return match ($faction) {
+            'faction_1' => __('Placeholder copy: a war-host that answers steel with steel. It marches in the open, and its armourers forge wares no other banner may carry.'),
+            'faction_2' => __('Placeholder copy: a war-host that answers steel with cunning. It marches unseen, and its armourers forge wares no other banner may carry.'),
+            default => '',
+        };
+    }
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array<int, string>

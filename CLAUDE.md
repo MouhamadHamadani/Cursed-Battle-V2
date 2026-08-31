@@ -23,7 +23,7 @@ Faction **display names are not decided** — the DB keys are deliberately gener
 ## Data model (decided this session — add to knowledge doc if not already there)
 
 - `users` — standard Laravel auth fields
-- `characters` (1:1 `users`, its own table — NOT merged into `users`): faction (not null, picked once at creation, immutable for MVP), level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp)
+- `characters` (1:1 `users`, its own table — NOT merged into `users`): faction (not null, picked once at creation, immutable for MVP), level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp), opponent_id (nullable self-FK — the one revealed battle mark) + opponent_rerolls (unsigned int, default 0). The last two are the opponent search: server-side so a refresh or logout can't buy a free re-roll. `OpponentService` owns them; `CombatService::resolve()` zeroes them when a fight is committed.
 - `occupations` (this doc originally said `jobs`; renamed because Laravel's queue owns a `jobs` table and QUEUE/SESSION/CACHE run on the DB driver — the name collided): name, description, min_level, max_level, gold_per_energy, timestamps
 - `items`: name, type (weapon/armor), faction (nullable — NULL is universal, sold to everyone), strength_delta, defense_delta, agility_delta, min_level, cost, image. Market listing filters to `faction IS NULL OR faction = character.faction`, and `MarketService::buy()` re-checks it (the item id is client input).
 - `character_items`: character_id, item_id, equipped (bool)
@@ -46,7 +46,7 @@ max 10 rounds, then resolve by remaining health if no KO
 
 MVP is instant-resolve: this must be a single synchronous, bounded loop inside one service call — never a `while(true)` with real-time timers.
 
-`CombatService::resolve(Character $attacker, Character $defender): CombatResult` is the only entry point. It must check `hospitalized_until` on both characters before running anything else and reject the attack if either is still hospitalized.
+`CombatService::resolve(Character $attacker, Character $defender): CombatResult` is the only entry point. The defender is not client input — the Battle component reads it from `characters.opponent_id` (see `OpponentService`), replacing the old list-of-all-opponents view. It must check `hospitalized_until` on both characters before running anything else and reject the attack if either is still hospitalized.
 
 ## Regen
 Energy/health regen ticks run via Laravel's scheduler (cron), not client-side timers, not lazy per-request timestamp math. This is locked — a lazy-timestamp alternative was considered and explicitly set aside in favor of a visible, global tick feel matching the genre reference games.

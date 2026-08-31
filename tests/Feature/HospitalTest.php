@@ -143,20 +143,20 @@ test('GET /hospital returns 200 for an authenticated user with a character', fun
     $response->assertStatus(200);
 });
 
-test('the dashboard shows the hospital banner when the character is hospitalized', function () {
+test('home shows the hospital banner when the character is hospitalized', function () {
     $user = User::factory()->create();
     $user->character()->create(['hospitalized_until' => now()->addMinutes(30)]);
 
-    $response = $this->actingAs($user)->get('/dashboard');
+    $response = $this->actingAs($user)->get('/home');
 
     $response->assertSee('In hospital');
 });
 
-test('the dashboard does not show the hospital banner when the character is healthy', function () {
+test('home does not show the hospital banner when the character is healthy', function () {
     $user = User::factory()->create();
     $user->character()->create([]);
 
-    $response = $this->actingAs($user)->get('/dashboard');
+    $response = $this->actingAs($user)->get('/home');
 
     $response->assertDontSee('In hospital');
 });

@@ -54,6 +54,15 @@
             </x-dark-wall>
         </div>
 
+        {{-- Faction. Click through for the banner's own page. --}}
+        <button type="button" wire:click="$set('showFaction', true)" class="block w-full mb-8">
+            <x-dark-wall class="border border-yellow-700 p-4 flex items-center justify-center gap-3 hover:border-yellow-500 transition duration-300">
+                <i class="fa-duotone fa-solid fa-flag-swallowtail text-yellow-500"></i>
+                <x-label class="text-yellow-500">{{ __('Faction') }}</x-label>
+                <x-label class="text-xl">{{ \App\Models\Character::factionLabel($character->faction) }}</x-label>
+            </x-dark-wall>
+        </button>
+
         {{-- Standing and stats. --}}
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-6 text-center">
             <div>
@@ -79,6 +88,33 @@
                 <x-label class="text-3xl">{{ $character->agility }}</x-label>
             </div>
         </div>
+
+        <x-dark-modal wire:model.live="showFaction" maxWidth="lg">
+            <div class="p-8 text-center">
+                <x-label class="font-uncialAntiqua text-3xl text-yellow-500">
+                    {{ \App\Models\Character::factionLabel($character->faction) }}
+                </x-label>
+
+                <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+
+                <p class="font-sans text-sm text-stone-300">
+                    {{ \App\Models\Character::factionDescription($character->faction) }}
+                </p>
+
+                @if ($factionCount !== null)
+                    <div class="mt-6">
+                        <x-label class="text-yellow-500">
+                            <i class="fa-duotone fa-solid fa-users me-2"></i>{{ __('Soldiers under this banner') }}
+                        </x-label>
+                        <x-label class="block text-3xl">{{ $factionCount }}</x-label>
+                    </div>
+                @endif
+
+                <div class="flex justify-center mt-8">
+                    <x-button type="button" x-on:click="show = false">{{ __('Close') }}</x-button>
+                </div>
+            </div>
+        </x-dark-modal>
     @else
         <x-label class="text-xl text-red-500 text-center">{{ __('No character found.') }}</x-label>
     @endif

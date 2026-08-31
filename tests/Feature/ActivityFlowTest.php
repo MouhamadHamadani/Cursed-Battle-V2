@@ -80,11 +80,14 @@ test('attacking while busy flashes the in-character refusal, not a raw error', f
     [$user, $character] = actor();
     $defender = Character::create(['user_id' => User::factory()->create()->id, 'level' => 1]);
 
+    // Mark revealed before the shift started — searching is blocked while busy,
+    // but a mark already in hand still lets the player reach for Attack.
+    $character->update(['opponent_id' => $defender->id]);
     app(WorkService::class)->start($character, digging());
 
     $this->actingAs($user);
     Livewire::test(Battle::class)
-        ->call('attack', $defender->id)
+        ->call('attack')
         ->assertSee('Thou canst not take up arms while at thy labours.');
 });
 

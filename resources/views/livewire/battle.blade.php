@@ -38,45 +38,81 @@
 
             <x-divider />
 
-            {{-- Opponents --}}
+            {{-- The mark. One at a time, held on the character row. --}}
             <div>
                 <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
-                    <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Opponents') }}
+                    <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Thy Mark') }}
                 </x-label>
 
-                <div class="flex flex-wrap justify-center gap-6">
-                    @forelse ($this->opponents as $opponent)
-                        <x-dark-wall wire:key="opponent-{{ $opponent->id }}"
-                                     class="flex flex-col basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)] border border-yellow-700 p-5 hover:border-red-500 transition duration-300">
+                <div class="flex justify-center">
+                    @if ($this->opponent)
+                        {{-- Hoisted, and bound with :disabled rather than the
+                             @disabled directive: a Blade directive inside a
+                             component tag's attributes stops the tag compiler
+                             from matching the opening tag while the closing one
+                             still compiles, which silently unbalances the @if. --}}
+                        @php $tooPoorToReroll = $this->character->gold < $this->searchCost; @endphp
+
+                        <x-dark-wall wire:key="opponent-{{ $this->opponent->id }}"
+                                     class="flex flex-col basis-full sm:basis-2/3 lg:basis-1/2 border border-yellow-700 p-6 hover:border-red-500 transition duration-300">
                             <div class="text-center">
-                                <i class="fa-duotone fa-solid fa-helmet-battle fa-3x text-yellow-500"></i>
-                                <x-label class="text-xl mt-3">{{ $opponent->user->name ?? 'Unknown' }}</x-label>
+                                <i class="fa-duotone fa-solid fa-helmet-battle fa-4x text-yellow-500"></i>
+                                <x-label class="text-2xl mt-3">{{ $this->opponent->user->name ?? __('Unknown') }}</x-label>
                             </div>
 
-                            <div class="mt-3 space-y-1 text-center">
-                                <x-label class="text-sm text-stone-400">
-                                    {{ __('Level') }} <span class="text-white">{{ $opponent->level }}</span>
-                                </x-label>
-                                <x-label class="text-sm text-stone-400">
-                                    <i class="fa-duotone fa-solid fa-heart text-red-500 me-1"></i>
-                                    <span class="text-white">{{ $opponent->health }} / {{ $opponent->max_health }}</span>
-                                </x-label>
+                            <div class="mt-4 grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <x-label class="text-sm text-stone-400">{{ __('Level') }}</x-label>
+                                    <x-label class="text-xl">{{ $this->opponent->level }}</x-label>
+                                </div>
+                                <div>
+                                    <x-label class="text-sm text-stone-400">
+                                        <i class="fa-duotone fa-solid fa-heart text-red-500 me-1"></i>{{ __('Health') }}
+                                    </x-label>
+                                    <x-label class="text-xl">{{ $this->opponent->health }} / {{ $this->opponent->max_health }}</x-label>
+                                </div>
                             </div>
 
-                            <div class="mt-auto pt-5">
+                            <div class="mt-auto pt-6 flex flex-col sm:flex-row gap-3">
                                 <x-button
-                                    class="w-full"
+                                    class="flex-1"
                                     target="attack"
-                                    wire:click="attack({{ $opponent->id }})"
+                                    wire:click="attack"
                                     wire:loading.attr="disabled"
                                 >
                                     <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Attack') }}
                                 </x-button>
+
+                                {{-- Rejecting this face is what costs; the price
+                                     climbs until a fight is actually fought. --}}
+                                <x-secondary-button
+                                    class="flex-1"
+                                    wire:click="search"
+                                    wire:loading.attr="disabled"
+                                    :disabled="$tooPoorToReroll"
+                                >
+                                    <i class="fa-duotone fa-solid fa-arrows-rotate me-2"></i>{{ __('Seek Another') }}
+                                    <span class="ms-2 text-white">
+                                        <i class="fa-duotone fa-solid fa-coins text-yellow-500 me-1"></i>{{ $this->searchCost }}
+                                    </span>
+                                </x-secondary-button>
                             </div>
                         </x-dark-wall>
-                    @empty
-                        <x-label class="text-stone-400">{{ __('No opponents available.') }}</x-label>
-                    @endforelse
+                    @else
+                        <x-dark-wall class="basis-full sm:basis-2/3 lg:basis-1/2 border border-yellow-700 p-8 text-center">
+                            <i class="fa-duotone fa-solid fa-magnifying-glass fa-4x text-yellow-500"></i>
+                            <x-label class="block text-2xl mt-4">{{ __('No mark before thee') }}</x-label>
+                            <p class="mt-2 font-sans text-xs text-stone-400">
+                                {{ __('The first search costs nothing. Turning thy nose up at what it finds does.') }}
+                            </p>
+
+                            <div class="mt-6">
+                                <x-button target="search" wire:click="search" wire:loading.attr="disabled">
+                                    <i class="fa-duotone fa-solid fa-magnifying-glass me-2"></i>{{ __('Seek an Opponent') }}
+                                </x-button>
+                            </div>
+                        </x-dark-wall>
+                    @endif
                 </div>
             </div>
 
