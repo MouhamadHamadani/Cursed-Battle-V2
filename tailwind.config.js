@@ -12,13 +12,6 @@ export default {
 
     theme: {
         extend: {
-            colors: {
-                // Levantine accent tokens — additive, the black/gold/red/leather
-                // base palette is untouched.
-                brass: '#c8a24a',
-                sand: '#e8d9b5',
-                'oasis-teal': '#2f6f6a',
-            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
                 // Ported from V1's "leather and gold" theme — display faces only.

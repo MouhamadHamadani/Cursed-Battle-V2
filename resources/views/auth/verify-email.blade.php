@@ -9,6 +9,8 @@
         </div>
     @endif
 
+    <x-chain-divider class="my-6" />
+
     <div class="mt-4 flex items-center justify-between">
         <form method="POST" action="{{ route('verification.send') }}">
             @csrf

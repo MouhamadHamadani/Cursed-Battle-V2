@@ -3,6 +3,8 @@
         {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
     </div>
 
+    <x-chain-divider class="mb-6" />
+
     <form method="POST" action="{{ route('password.confirm') }}">
         @csrf
 

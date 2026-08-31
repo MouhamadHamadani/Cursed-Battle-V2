@@ -3,6 +3,10 @@
         {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
     </div>
 
+    {{-- No arch here: these views carry no title for one to frame, so they get
+         the chain seam only (see login/register for the full treatment). --}}
+    <x-chain-divider class="mb-6" />
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

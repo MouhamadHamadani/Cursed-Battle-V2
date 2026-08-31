@@ -8,10 +8,16 @@ use App\Livewire\Hospital;
 use App\Livewire\Market;
 use App\Livewire\Train;
 use App\Livewire\Work;
+use App\Services\LandingStats;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/', function (LandingStats $stats) {
+    return view('welcome', [
+        // Null hides the social-proof strip entirely. Same call as Home's
+        // faction headcount: the figures are real, showing them is a config
+        // decision while the population is small.
+        'stats' => config('game.landing_stats') ? $stats->counts() : null,
+    ]);
 });
 
 // Step two of character creation — reachable with no character, which is

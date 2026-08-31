@@ -101,7 +101,9 @@
                     {{ \App\Models\Character::factionLabel($character->faction) }}
                 </x-label>
 
-                <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                {{-- Paired with the faction preview modal on the creation page:
+                     same panel, same rule. --}}
+                <x-chain-divider class="my-5" />
 
                 <p class="font-sans text-sm text-stone-300">
                     {{ \App\Models\Character::factionDescription($character->faction) }}
