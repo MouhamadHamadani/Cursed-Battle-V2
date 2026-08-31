@@ -22,16 +22,56 @@
         @livewireStyles
     </head>
     <body class="font-newRocker antialiased text-white">
-        <x-dark-wall class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-black">
-            <div>
-                <a href="/" wire:navigate>
-                    <x-application-logo class="w-40 h-40" />
-                </a>
-            </div>
+        {{--
+            Same map as the landing hero, so arriving at the auth funnel reads
+            as the same place rather than a blank void. Three layers, bottom up:
+            <x-dark-wall>'s stone tile, the map over it at partial opacity so
+            the grain still shows through, then a vignette that pulls the edges
+            down and keeps the card legible wherever the map happens to be
+            bright. The wash is CSS only — no second image asset.
+        --}}
+        <x-dark-wall class="relative min-h-screen bg-black">
+            <div class="absolute inset-0 bg-cover bg-center opacity-40"
+                 style="background-image: url('{{ asset('images/map.png') }}');"></div>
 
-            <x-dark-leather class="w-full sm:max-w-md mt-6 px-6 py-6 border border-yellow-700 shadow-md overflow-hidden">
-                {{ $slot }}
-            </x-dark-leather>
+            {{-- Radial, not one of Tailwind's linear gradients: the card is
+                 centred, so the falloff should be centred on it too. --}}
+            <div class="absolute inset-0"
+                 style="background: radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.62) 0%, rgba(0,0,0,.90) 52%, rgba(0,0,0,.99) 100%);"></div>
+
+            <div class="relative flex min-h-screen flex-col items-center px-4 py-8">
+                <a href="/" class="mt-auto" wire:navigate>
+                    <x-application-logo class="h-32 w-32" />
+                </a>
+
+                <x-dark-leather class="relative mt-2 w-full overflow-hidden border border-yellow-700/80 px-6 py-7 shadow-2xl shadow-yellow-900/40 sm:max-w-md">
+                    {{-- Brass corner brackets: one shape rotated into each
+                         corner, double stroke to match <x-gothic-arch-frame>.
+                         Inset off the border so the two lines don't collide. --}}
+                    @foreach ([
+                        'top-1.5 start-1.5' => '',
+                        'top-1.5 end-1.5' => 'rotate-90',
+                        'bottom-1.5 end-1.5' => 'rotate-180',
+                        'bottom-1.5 start-1.5' => '-rotate-90',
+                    ] as $corner => $spin)
+                        <svg class="pointer-events-none absolute {{ $corner }} {{ $spin }} h-7 w-7 text-yellow-600/70"
+                             viewBox="0 0 28 28" fill="none" stroke="currentColor"
+                             stroke-linecap="round" aria-hidden="true" focusable="false">
+                            <path d="M26 1 H6 A5 5 0 0 0 1 6 V26" stroke-width="1.6"/>
+                            <path d="M26 5.5 H8 A2.5 2.5 0 0 0 5.5 8 V26" stroke-width="1" stroke-opacity=".55"/>
+                        </svg>
+                    @endforeach
+
+                    {{-- Stacked over the brackets so form controls stay clickable. --}}
+                    <div class="relative">{{ $slot }}</div>
+                </x-dark-leather>
+
+                {{-- Echoes the landing hero's tagline verbatim — same promise,
+                     same words, so the two pages read as one pitch. --}}
+                <p class="mb-auto mt-6 text-center font-sans text-xs uppercase tracking-[.2em] text-stone-400/80">
+                    {{ __('Two banners. One field. No quarter.') }}
+                </p>
+            </div>
         </x-dark-wall>
 
         @livewireScripts
