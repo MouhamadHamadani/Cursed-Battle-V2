@@ -42,8 +42,12 @@
                             $affordable = $this->character->gold >= $item->cost;
                         @endphp
 
-                        <x-dark-wall wire:key="shop-{{ $item->id }}"
-                                     class="flex flex-col basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)] border border-yellow-700 p-5 hover:border-yellow-500 transition duration-300">
+                        {{-- wire:key moves out to the wrapper with the flex basis:
+                             it has to sit on the loop iteration's root element,
+                             and the scrollwork is now that element. --}}
+                        <x-iron-scrollwork wire:key="shop-{{ $item->id }}"
+                                           class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
+                        <x-dark-wall class="flex flex-col border border-yellow-700 p-5 hover:border-yellow-500 transition duration-300">
                             <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
 
                             <x-label class="text-xl text-center mt-3">{{ $item->name }}</x-label>
@@ -95,6 +99,7 @@
                                 @endif
                             </div>
                         </x-dark-wall>
+                        </x-iron-scrollwork>
                     @endforeach
                 </div>
             </div>
@@ -114,8 +119,9 @@
                             $deltas = $deltasOf($item);
                         @endphp
 
-                        <x-dark-wall wire:key="inv-{{ $characterItem->id }}"
-                                     class="flex flex-col basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)] border {{ $characterItem->equipped ? 'border-green-500' : 'border-yellow-700' }} p-5 transition duration-300">
+                        <x-iron-scrollwork wire:key="inv-{{ $characterItem->id }}"
+                                           class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
+                        <x-dark-wall class="flex flex-col border {{ $characterItem->equipped ? 'border-green-500' : 'border-yellow-700' }} p-5 transition duration-300">
                             <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
 
                             <div class="flex items-center justify-center gap-2 mt-3">
@@ -164,6 +170,7 @@
                                 @endif
                             </div>
                         </x-dark-wall>
+                        </x-iron-scrollwork>
                     @empty
                         <x-label class="text-stone-400">{{ __('You have no items yet.') }}</x-label>
                     @endforelse

@@ -1,6 +1,11 @@
 <div>
     @if ($this->character)
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
+            {{-- Corners shrunk to 24px. This strip is only ~54px tall, so the
+                 component's default 40px flourishes would nearly meet in the
+                 middle of it — it renders on every page and has to stay a
+                 glance-readable row of figures, not an ornament. --}}
+            <x-iron-scrollwork class="[&>svg]:h-6 [&>svg]:w-6">
             <x-dark-wall class="flex flex-wrap items-center justify-center gap-5 p-3 border border-yellow-700">
                 <div class="flex flex-1 justify-center items-center gap-x-2" title="{{ __('Level') }}">
                     <i class="fa-duotone fa-solid fa-shield-halved text-yellow-500"></i>
@@ -51,6 +56,7 @@
                     </div>
                 @endif
             </x-dark-wall>
+            </x-iron-scrollwork>
         </div>
     @endif
 </div>

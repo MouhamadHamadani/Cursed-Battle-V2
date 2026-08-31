@@ -132,16 +132,21 @@
             <div class="relative h-80 bg-center bg-no-repeat bg-cover"
                  style="background-image: url('{{ asset('images/'.$banner) }}');">
                 <div class="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <x-label class="font-uncialAntiqua text-5xl text-center text-shadow-lg {{ $won ? 'text-yellow-500 shadow-yellow-600' : 'text-red-500 shadow-red-900' }}">
-                        {{ $won ? __('Victory') : __('Defeated') }}
-                    </x-label>
+                    {{-- Fixed width rather than a max-w override: the arch needs a
+                         box narrower than the component default to keep a tall
+                         head, and w-* can't collide with its own max-w-[400px]. --}}
+                    <x-gothic-arch-frame class="w-[280px]">
+                        <x-label class="font-uncialAntiqua text-5xl text-center text-shadow-lg {{ $won ? 'text-yellow-500 shadow-yellow-600' : 'text-red-500 shadow-red-900' }}">
+                            {{ $won ? __('Victory') : __('Defeated') }}
+                        </x-label>
+                    </x-gothic-arch-frame>
                 </div>
             </div>
 
             <div class="p-5">
                 <x-label class="font-uncialAntiqua text-3xl text-center text-yellow-500">{{ __('Battle Result') }}</x-label>
 
-                <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                <x-chain-divider class="my-5" />
 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
                     <div>
@@ -179,7 +184,7 @@
                     @endif
                 </div>
 
-                <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                <x-chain-divider class="my-5" />
 
                 {{-- Round-by-round, told as chronicle rather than as a table. --}}
                 <div class="max-h-72 overflow-y-auto no-scrollbar font-sans text-stone-300 space-y-2">
@@ -203,7 +208,7 @@
                     @endforeach
                 </div>
 
-                <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                <x-chain-divider class="my-5" />
 
                 <x-label class="font-uncialAntiqua text-4xl text-center {{ $won ? 'text-yellow-500' : 'text-red-500' }}">
                     {{ $won ? __('You Won') : __('You Lost') }}

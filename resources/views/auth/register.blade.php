@@ -1,10 +1,12 @@
 <x-guest-layout>
     {{-- Account only. The character — and the faction stamped on it — is
          forged on the next screen. --}}
-    <div class="text-center mb-6">
+    <x-gothic-arch-frame class="text-center">
         <x-label class="text-3xl text-yellow-500 text-shadow-lg shadow-yellow-600">{{ __('Forge Your Champion') }}</x-label>
         <p class="mt-2 font-sans text-sm text-stone-300">{{ __('Name thyself. Thy banner is chosen on the next screen.') }}</p>
-    </div>
+    </x-gothic-arch-frame>
+
+    <x-chain-divider class="mb-6" />
 
     <form method="POST" action="{{ route('register') }}">
         @csrf

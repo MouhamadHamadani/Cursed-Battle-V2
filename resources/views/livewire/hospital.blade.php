@@ -20,12 +20,15 @@
                     ];
                 @endphp
 
+                <x-iron-scrollwork>
                 <x-dark-leather class="border border-red-900 p-10 text-center">
                     <i class="fa-duotone fa-solid fa-kit-medical fa-4x text-red-500"></i>
 
                     <x-label class="font-uncialAntiqua text-4xl text-red-500 mt-5">{{ __('You are hospitalized.') }}</x-label>
 
-                    <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                    {{-- Chain only on the blocked branch, matching Work/Train:
+                         the healthy panel below keeps the plain rule. --}}
+                    <x-chain-divider class="my-5" />
 
                     <x-label class="text-xl text-yellow-500">{{ $bedside[array_rand($bedside)] }}</x-label>
 
@@ -41,7 +44,9 @@
                         <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
                     </div>
                 </x-dark-leather>
+                </x-iron-scrollwork>
             @else
+                <x-iron-scrollwork>
                 <x-dark-leather class="border border-yellow-700 p-10 text-center">
                     <i class="fa-duotone fa-solid fa-shield-halved fa-4x text-green-500"></i>
 
@@ -62,6 +67,7 @@
                         </x-button>
                     </a>
                 </x-dark-leather>
+                </x-iron-scrollwork>
             @endif
 
         </div>

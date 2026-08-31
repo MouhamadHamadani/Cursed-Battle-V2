@@ -44,8 +44,10 @@
                         'The echoes of thy training resonate. Return when the echo fades and thy training is complete.',
                     ];
                 @endphp
+                {{-- Chain on the blocked panels only, as on Work. --}}
                 <x-dark-wall class="border border-yellow-700 p-6 text-center">
                     <i class="fa-duotone fa-solid fa-dumbbell fa-2x text-yellow-500"></i>
+                    <x-chain-divider class="mt-4" />
                     <x-label class="text-xl text-yellow-500 mt-3">{{ $drilling[array_rand($drilling)] }}</x-label>
                     <x-label class="text-4xl mt-4">
                         <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
@@ -67,6 +69,7 @@
                 @endphp
                 <x-dark-wall class="border border-red-900 p-6 text-center">
                     <i class="fa-duotone fa-solid fa-bed fa-2x text-red-500"></i>
+                    <x-chain-divider class="mt-4" />
                     <x-label class="text-xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
                 </x-dark-wall>
             @endif
@@ -75,7 +78,8 @@
 
             <div class="flex flex-wrap justify-center gap-6">
                 @foreach ($stats as $key => $stat)
-                    <x-dark-wall class="flex flex-col basis-full md:basis-[calc(33.333%-1rem)] border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
+                    <x-iron-scrollwork class="grid basis-full md:basis-[calc(33.333%-1rem)]">
+                    <x-dark-wall class="flex flex-col border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
                         <div class="text-center">
                             <i class="fa-duotone fa-solid {{ $stat['icon'] }} fa-3x text-yellow-500"></i>
                             <x-label class="text-2xl mt-3">{{ $stat['label'] }}</x-label>
@@ -107,6 +111,7 @@
                             @endif
                         </div>
                     </x-dark-wall>
+                    </x-iron-scrollwork>
                 @endforeach
             </div>
 

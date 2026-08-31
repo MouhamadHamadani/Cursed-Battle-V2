@@ -1,8 +1,14 @@
 <x-guest-layout>
-    <div class="text-center mb-6">
+    {{-- Arch + chain mirror the landing page so the auth funnel reads as the
+         same place. The arch frames the heading only, not the fields: its head
+         sweeps ~80% of the box height, so a form-tall box would drag the curve
+         straight through the inputs. --}}
+    <x-gothic-arch-frame class="text-center">
         <x-label class="text-3xl text-yellow-500 text-shadow-lg shadow-yellow-600">{{ __('Enter the Fray') }}</x-label>
         <p class="mt-2 font-sans text-sm text-stone-300">{{ __('Your champion awaits your command.') }}</p>
-    </div>
+    </x-gothic-arch-frame>
+
+    <x-chain-divider class="mb-6" />
 
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />

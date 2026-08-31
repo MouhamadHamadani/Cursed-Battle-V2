@@ -23,8 +23,11 @@
                     ];
                     $currentJob = $this->occupations->firstWhere('id', $this->character->activity_occupation_id);
                 @endphp
+                {{-- Chain reads as "bound" — it goes on the blocked panels only,
+                     never on the cards that still offer an action. --}}
                 <x-dark-wall class="border border-yellow-700 p-6 text-center">
                     <i class="fa-duotone fa-solid fa-hammer fa-2x text-yellow-500"></i>
+                    <x-chain-divider class="mt-4" />
                     <x-label class="text-xl text-yellow-500 mt-3">{{ $atWork[array_rand($atWork)] }}</x-label>
                     <x-label class="text-4xl mt-4">
                         <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
@@ -46,6 +49,7 @@
                 @endphp
                 <x-dark-wall class="border border-red-900 p-6 text-center">
                     <i class="fa-duotone fa-solid fa-bed fa-2x text-red-500"></i>
+                    <x-chain-divider class="mt-4" />
                     <x-label class="text-xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
                 </x-dark-wall>
             @endif
@@ -59,7 +63,11 @@
                             && ($occupation->max_level === null || $this->character->level <= $occupation->max_level);
                     @endphp
 
-                    <x-dark-wall class="flex flex-col basis-full md:basis-[calc(50%-0.75rem)] border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
+                    {{-- The scrollwork wrapper takes the flex basis and is a grid
+                         so its single child fills it — the card still needs full
+                         height for the mt-auto button row to sit on the bottom. --}}
+                    <x-iron-scrollwork class="grid basis-full md:basis-[calc(50%-0.75rem)]">
+                    <x-dark-wall class="flex flex-col border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
                         <div class="text-center">
                             <i class="fa-duotone fa-solid fa-hammer fa-2x {{ $qualifies ? 'text-yellow-500' : 'text-stone-600' }}"></i>
                             <x-label class="text-2xl mt-3">{{ $occupation->name }}</x-label>
@@ -98,6 +106,7 @@
                             @endif
                         </div>
                     </x-dark-wall>
+                    </x-iron-scrollwork>
                 @endforeach
             </div>
 

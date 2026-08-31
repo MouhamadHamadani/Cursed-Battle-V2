@@ -65,9 +65,15 @@
 
         {{-- Standing and stats. --}}
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-6 text-center">
+            {{-- Rank badge. Sized to the text-3xl line box on purpose so the
+                 seal sits beside the number without making this one cell taller
+                 than the four next to it. --}}
             <div>
                 <x-label class="text-yellow-500">{{ __('Level') }}</x-label>
-                <x-label class="text-3xl">{{ $character->level }}</x-label>
+                <div class="flex items-center justify-center gap-2">
+                    <x-wax-seal :size="36" />
+                    <x-label class="text-3xl">{{ $character->level }}</x-label>
+                </div>
             </div>
             <div>
                 <x-label class="text-yellow-500">

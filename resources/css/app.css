@@ -70,3 +70,43 @@
     top: 5px;
     width: 164px;
 }
+
+/* ---------------------------------------------------------------------------
+   Levantine accent layer — procedural SVG data-URI patterns, no raster assets.
+   Decoration only; the medieval leather/gold base stays dominant. Structural
+   pieces (arch frame, brass rule) are Blade components, these three are plain
+   classes so they can be dropped onto an element that already has a texture.
+   --------------------------------------------------------------------------- */
+
+/* Girih star tessellation, laid *behind* the element's own content. Kept at
+   grain level (4%) and applied to a small accent zone only — at full-card
+   scale it stops reading as texture and starts competing with the content. */
+.girih-bg {
+    position: relative;
+    isolation: isolate;
+}
+
+.girih-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.04;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cdefs%3E%3Cg id='k'%3E%3Cpath d='M0 -20 L20 0 L0 20 L-20 0 Z'/%3E%3Cpath d='M-14.1 -14.1 H14.1 V14.1 H-14.1 Z'/%3E%3C/g%3E%3C/defs%3E%3Cg fill='none' stroke='%23c8a24a' stroke-width='1'%3E%3Cuse href='%23k' x='30' y='30'/%3E%3Cuse href='%23k' x='0' y='0'/%3E%3Cuse href='%23k' x='60' y='0'/%3E%3Cuse href='%23k' x='0' y='60'/%3E%3Cuse href='%23k' x='60' y='60'/%3E%3Cpath d='M30 10 L20 0 M30 10 L40 0 M50 30 L60 20 M50 30 L60 40 M30 50 L40 60 M30 50 L20 60 M10 30 L0 20 M10 30 L0 40'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Mashrabiya lattice as a border treatment. 24px tile sliced at 8 so corners
+   and edge strips are both exactly one 8px diamond cell — uniform either way. */
+.mashrabiya-border {
+    border: 8px solid transparent;
+    border-image-source: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cdefs%3E%3Cpattern id='m' width='8' height='8' patternUnits='userSpaceOnUse'%3E%3Cpath d='M4 0 L8 4 L4 8 L0 4 Z' fill='none' stroke='%23c8a24a' stroke-opacity='.4' stroke-width='.9'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='24' height='24' fill='url(%23m)'/%3E%3C/svg%3E");
+    border-image-slice: 8;
+    border-image-repeat: repeat;
+}
+
+/* Damascus-steel banding — layered wave lines for thin horizontal strips only. */
+.damascus-band {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='16'%3E%3Cg fill='none' stroke='%23c8a24a' stroke-opacity='.45' stroke-width='1'%3E%3Cpath d='M0 3 Q10 0 20 3 T40 3'/%3E%3Cpath d='M0 8 Q10 5 20 8 T40 8'/%3E%3Cpath d='M0 13 Q10 10 20 13 T40 13'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+}
