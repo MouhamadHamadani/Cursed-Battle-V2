@@ -29,6 +29,21 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
+    /* Fade for the town-map overlay. A plain keyframe rather than
+       x-transition on purpose: Alpine's transition system defers the HIDE
+       behind requestAnimationFrame, and the embedded preview pane never
+       delivers that frame, so a closed overlay stays painted. x-show sets
+       display:none synchronously; this only decorates the show. */
+    .animate-fade-in {
+        animation: fade-in 300ms ease-out;
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+    }
 }
 
 /* V1's <x-divider> — a sprite rule with a decorative centrepiece. */

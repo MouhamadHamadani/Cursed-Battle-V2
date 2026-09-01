@@ -45,22 +45,7 @@
                 </a>
 
                 <x-dark-leather class="relative mt-2 w-full overflow-hidden border border-yellow-700/80 px-6 py-7 shadow-2xl shadow-yellow-900/40 sm:max-w-md">
-                    {{-- Brass corner brackets: one shape rotated into each
-                         corner, double stroke to match <x-gothic-arch-frame>.
-                         Inset off the border so the two lines don't collide. --}}
-                    @foreach ([
-                        'top-1.5 start-1.5' => '',
-                        'top-1.5 end-1.5' => 'rotate-90',
-                        'bottom-1.5 end-1.5' => 'rotate-180',
-                        'bottom-1.5 start-1.5' => '-rotate-90',
-                    ] as $corner => $spin)
-                        <svg class="pointer-events-none absolute {{ $corner }} {{ $spin }} h-7 w-7 text-yellow-600/70"
-                             viewBox="0 0 28 28" fill="none" stroke="currentColor"
-                             stroke-linecap="round" aria-hidden="true" focusable="false">
-                            <path d="M26 1 H6 A5 5 0 0 0 1 6 V26" stroke-width="1.6"/>
-                            <path d="M26 5.5 H8 A2.5 2.5 0 0 0 5.5 8 V26" stroke-width="1" stroke-opacity=".55"/>
-                        </svg>
-                    @endforeach
+                    <x-brass-corners class="h-7 w-7 text-yellow-600/70" />
 
                     {{-- Stacked over the brackets so form controls stay clickable. --}}
                     <div class="relative">{{ $slot }}</div>
