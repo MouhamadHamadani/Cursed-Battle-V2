@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::table('characters', function (Blueprint $table) {
             $table->string('activity_type', 16)->nullable();              // 'train' | 'work'
-            $table->string('activity_stat', 16)->nullable();              // train: strength|defense|agility
+            $table->string('activity_stat', 16)->nullable();              // train: strength|defense|speed|dexterity
             $table->foreignId('activity_occupation_id')->nullable()
                 ->constrained('occupations')->nullOnDelete();             // work: display/provenance only
             $table->unsignedInteger('activity_energy_spent')->nullable(); // snapshot: payout + XP basis

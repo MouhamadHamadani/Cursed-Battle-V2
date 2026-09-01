@@ -195,7 +195,11 @@
                         @endphp
                         <p wire:key="ev-{{ $i }}">
                             <span class="font-newRocker text-yellow-700">{{ __('Round') }} {{ $event['round'] }}</span> &mdash;
-                            @if ($event['dodged'])
+                            @if ($event['missed'] ?? false)
+                                {{-- A miss is the attacker's failure; a dodge is the
+                                     defender's success (ADR-003). Two different lines. --}}
+                                {{ __(':actor swings wide, and the blow finds only air.', ['actor' => $actor]) }}
+                            @elseif ($event['dodged'])
                                 {{ __(':actor swings, and :target slips the blow.', ['actor' => $actor, 'target' => $target]) }}
                             @else
                                 {{ __(':actor lands a blow for', ['actor' => $actor]) }}

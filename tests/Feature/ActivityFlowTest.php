@@ -216,3 +216,41 @@ test('the work page and the status bar agree on whether a session is running', f
 
     $this->travelBack();
 });
+
+// ---------------------------------------------------------------------------
+// ADR-003 + the item description column: the four stats and the flavour text
+// actually reach the rendered pages, not just the service layer.
+// ---------------------------------------------------------------------------
+
+test('the four battle stats and an item description render on the pages that show them', function () {
+    [$user, $character] = actor(['defense' => 5, 'speed' => 7, 'dexterity' => 9]);
+
+    $item = Item::create([
+        'name' => 'Whispering Edge',
+        'type' => 'weapon',
+        'description' => 'It hums a little, and no one agrees about the tune.',
+        'strength_delta' => 3,
+        'defense_delta' => -1,
+        'speed_delta' => 4,
+        'dexterity_delta' => 2,
+        'min_level' => 1,
+        'cost' => 100,
+    ]);
+
+    $this->actingAs($user);
+
+    // Home: both new stat cells, with their values.
+    Livewire::test(\App\Livewire\Home::class)
+        ->assertSee('Speed')->assertSee('Dexterity')
+        ->assertSee('7')->assertSee('9');
+
+    // Train: a card for each of the four trainable stats.
+    Livewire::test(Train::class)
+        ->assertSee('Train Strength')->assertSee('Train Defense')
+        ->assertSee('Train Speed')->assertSee('Train Dexterity');
+
+    // Market: both new delta badges and the flavour text.
+    Livewire::test(Market::class)
+        ->assertSee('SPD')->assertSee('DEX')
+        ->assertSee($item->description);
+});

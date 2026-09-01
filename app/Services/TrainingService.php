@@ -18,7 +18,7 @@ class TrainingService
     public const TRAIN_SECONDS_PER_LEVEL = 30;
 
     // whitelist — client stat name validated against this
-    private const STATS = ['strength', 'defense', 'agility'];
+    private const STATS = ['strength', 'defense', 'speed', 'dexterity'];
 
     /**
      * Linear in level: 5m00s at L1, 7m00s at L5, 9m30s at L10, 14m30s at

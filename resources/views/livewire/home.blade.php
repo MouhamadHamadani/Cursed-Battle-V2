@@ -64,7 +64,7 @@
         </button>
 
         {{-- Standing and stats. --}}
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-6 text-center">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
             {{-- Rank badge. Sized to the text-3xl line box on purpose so the
                  seal sits beside the number without making this one cell taller
                  than the four next to it. --}}
@@ -90,8 +90,12 @@
                 <x-label class="text-3xl">{{ $character->defense }}</x-label>
             </div>
             <div>
-                <x-label class="text-yellow-500">{{ __('Agility') }}</x-label>
-                <x-label class="text-3xl">{{ $character->agility }}</x-label>
+                <x-label class="text-yellow-500">{{ __('Speed') }}</x-label>
+                <x-label class="text-3xl">{{ $character->speed }}</x-label>
+            </div>
+            <div>
+                <x-label class="text-yellow-500">{{ __('Dexterity') }}</x-label>
+                <x-label class="text-3xl">{{ $character->dexterity }}</x-label>
             </div>
         </div>
 

@@ -5,6 +5,8 @@
 **Deciders:** Mouhamad (project owner) — the two forks (persistent HP pool; combat+work-trickle XP) and the §Tunables defaults were accepted.
 **Supersedes:** the draft combat formula in CLAUDE.md (which explicitly says "formalize via ADR before implementing Phase 6").
 
+> **Addendum (2026-09-01):** one clause of §Forces below — *"three fixed stat columns — no new 'speed' stat"* — is **superseded by [ADR-003](ADR-003-four-stat-split.md)**, which splits `agility` into `speed` (hit chance, turn order) and `dexterity` (dodge). Wherever this ADR says `agility` — §Effective stats, the `resolve()` algorithm's dodge line and turn order — read `dexterity` for dodge and `speed` for turn order, and note that a new miss roll precedes the dodge roll. The original wording is left in place deliberately: this ADR is a dated record, not a living document. **Everything else here still stands unchanged** — hospital, leveling, gold-steal, the XP formulas and every §Tunables value.
+
 ---
 
 ## Context

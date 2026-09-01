@@ -23,17 +23,19 @@ Faction **display names are not decided** — the DB keys are deliberately gener
 ## Data model (decided this session — add to knowledge doc if not already there)
 
 - `users` — standard Laravel auth fields
-- `characters` (1:1 `users`, its own table — NOT merged into `users`): faction (not null, picked once at creation, immutable for MVP), level, xp, gold, health, max_health, energy, max_energy, strength, defense, agility, hospitalized_until (nullable timestamp), opponent_id (nullable self-FK — the one revealed battle mark) + opponent_rerolls (unsigned int, default 0). The last two are the opponent search: server-side so a refresh or logout can't buy a free re-roll. `OpponentService` owns them; `CombatService::resolve()` zeroes them when a fight is committed.
+- `characters` (1:1 `users`, its own table — NOT merged into `users`): faction (not null, picked once at creation, immutable for MVP), level, xp, gold, health, max_health, energy, max_energy, strength, defense, speed, dexterity, hospitalized_until (nullable timestamp), opponent_id (nullable self-FK — the one revealed battle mark) + opponent_rerolls (unsigned int, default 0). The last two are the opponent search: server-side so a refresh or logout can't buy a free re-roll. `OpponentService` owns them; `CombatService::resolve()` zeroes them when a fight is committed.
 - `occupations` (this doc originally said `jobs`; renamed because Laravel's queue owns a `jobs` table and QUEUE/SESSION/CACHE run on the DB driver — the name collided): name, description, min_level, max_level, gold_per_energy, timestamps
-- `items`: name, type (weapon/armor), faction (nullable — NULL is universal, sold to everyone), strength_delta, defense_delta, agility_delta, min_level, cost, image. Market listing filters to `faction IS NULL OR faction = character.faction`, and `MarketService::buy()` re-checks it (the item id is client input).
+- `items`: name, type (weapon/armor), description (nullable, pure flavour text — no mechanical effect), faction (nullable — NULL is universal, sold to everyone), strength_delta, defense_delta, speed_delta, dexterity_delta, min_level, cost, image. Market listing filters to `faction IS NULL OR faction = character.faction`, and `MarketService::buy()` re-checks it (the item id is client input).
 - `character_items`: character_id, item_id, equipped (bool)
 - `combat_logs`: attacker_id, defender_id, attacker_level, defender_level, attacker_stats (json snapshot), defender_stats (json snapshot), events (json round-by-round), winner_id, gold_change, xp_change, created_at
 
-Stats are **fixed columns** (strength/defense/agility), not a skills-pivot table. An earlier prototype used a `skills` + `user_skills` + `weapon_skills` pivot model — deliberately not carried forward for MVP; three stats don't justify the join overhead. Revisit only if a class system or a larger stat pool gets added post-MVP.
+Stats are **fixed columns** (strength/defense/speed/dexterity — four since [ADR-003](.claude/adr/ADR-003-four-stat-split.md) split the old single `agility` into speed for hit chance/turn order and dexterity for dodge), not a skills-pivot table. An earlier prototype used a `skills` + `user_skills` + `weapon_skills` pivot model — deliberately not carried forward for MVP; four stats don't justify the join overhead. Revisit only if a class system or a larger stat pool gets added post-MVP.
+
+**Durability and weight (and any repair/decay mechanic): still deferred.** Discussed and deliberately not built.
 
 ## Combat — draft formula, NOT yet finalized
 
-> **SUPERSEDED by [ADR-001](.claude/adr/ADR-001-combat-hospital-leveling.md) (Accepted 2026-07-24).** Phases 6–8 shipped against the ADR; it is the authoritative combat/hospital/leveling spec. The draft below is kept for history only.
+> **SUPERSEDED by [ADR-001](.claude/adr/ADR-001-combat-hospital-leveling.md) (Accepted 2026-07-24), and its stat model in turn by [ADR-003](.claude/adr/ADR-003-four-stat-split.md) (Accepted 2026-09-01).** Phases 6–8 shipped against ADR-001; ADR-003 then split `agility` into `speed` (hit chance + turn order) and `dexterity` (dodge) and added a miss roll ahead of the dodge roll. Together they are the authoritative combat/hospital/leveling spec. The draft below is kept for history only.
 
 Carried forward from an earlier prototype and adjusted. **Run `/architecture` to formalize this into an ADR before implementing Phase 6** — treat it as a draft, not a locked spec.
 

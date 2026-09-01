@@ -9,7 +9,7 @@
     // Icons match the ones Home already uses for the same four actions.
     $coreLoop = [
         ['icon' => 'fa-hammer', 'label' => __('Work'), 'blurb' => __('Spend thy energy at an honest trade and be paid in gold.')],
-        ['icon' => 'fa-dumbbell', 'label' => __('Train'), 'blurb' => __('Drill strength, defence and agility until they hold under load.')],
+        ['icon' => 'fa-dumbbell', 'label' => __('Train'), 'blurb' => __('Drill strength, defence, speed and dexterity until they hold under load.')],
         ['icon' => 'fa-swords', 'label' => __('Battle'), 'blurb' => __('Seek a mark and settle it — thy steel against theirs, resolved at once.')],
         ['icon' => 'fa-arrow-up-right-dots', 'label' => __('Level Up'), 'blurb' => __('Take the experience off the field and come back the harder man.')],
     ];
@@ -18,13 +18,20 @@
 <x-landing-layout>
     {{-- ── Hero ──────────────────────────────────────────────────────────── --}}
     <section class="relative flex min-h-[80vh] items-center justify-center bg-cover bg-center px-4 py-24"
-             style="background-image: url('{{ asset('images/map.png') }}');">
-        {{-- The map is a busy raster — without this wash it eats the copy.
+             style="background-image: url('{{ asset('images/hero.png') }}');">
+        {{-- The siege art is a busy raster — without this wash it eats the copy.
              It also fades into the page's black so the seam doesn't show.
-             Weighted for the narrow case: bg-cover zooms hard on a phone and
-             can park the tagline on a sunlit roof, so the wash is set for
-             that and desktop just reads a shade moodier. --}}
-        <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/80 to-black"></div>
+
+             Weighted for the narrow case, and it has to be: bg-cover zooms hard
+             on a phone and parks the headline squarely on the art's sunset, the
+             single brightest thing in it — gold-on-orange with no wash is
+             unreadable. Desktop shows enough of the dark flanks to take the
+             lighter sm: values, which is the only reason the art reads there at
+             all. The radial eases off with it, concentrating what is left on
+             the copy rather than crushing the already-black edges. --}}
+        <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/80 to-black sm:from-black/70 sm:via-black/75"></div>
+        <div class="absolute inset-0 opacity-100 sm:opacity-70"
+             style="background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,.6) 0%, rgba(0,0,0,.3) 55%, rgba(0,0,0,0) 100%);"></div>
 
         <div class="relative mx-auto max-w-3xl text-center">
             <x-application-logo class="mx-auto h-40 w-40" />

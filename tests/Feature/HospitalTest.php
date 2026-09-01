@@ -37,7 +37,7 @@ test('isHospitalized returns false when hospitalized_until is null', function ()
 });
 
 // Stats are set so only the hospital pre-check (not a stats-based outcome)
-// could plausibly gate the fight: attacker strength 1000, defender agility 0.
+// could plausibly gate the fight: attacker strength 1000, defender dexterity 0.
 test('a hospitalized attacker cannot attack a healthy defender', function () {
     $attacker = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -48,7 +48,7 @@ test('a hospitalized attacker cannot attack a healthy defender', function () {
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     expect(fn () => app(CombatService::class)->resolve($attacker, $defender))
@@ -64,7 +64,7 @@ test('a healthy attacker cannot attack a hospitalized defender', function () {
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
-        'agility' => 0,
+        'dexterity' => 0,
         'hospitalized_until' => now()->addMinutes(10),
     ]);
 

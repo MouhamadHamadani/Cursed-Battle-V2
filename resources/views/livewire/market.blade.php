@@ -11,7 +11,8 @@
         $deltasOf = fn ($item) => array_values(array_filter([
             ['label' => 'STR', 'value' => $item->strength_delta],
             ['label' => 'DEF', 'value' => $item->defense_delta],
-            ['label' => 'AGI', 'value' => $item->agility_delta],
+            ['label' => 'SPD', 'value' => $item->speed_delta],
+            ['label' => 'DEX', 'value' => $item->dexterity_delta],
         ], fn ($d) => $d['value'] !== 0));
 
         // Items carry no art yet (image column is nullable) — fall back to the crest.
@@ -54,6 +55,11 @@
                             <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
                                 <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->type }}
                             </x-label>
+
+                            {{-- Flavour only — no mechanical effect, and nullable. --}}
+                            @if ($item->description)
+                                <p class="font-sans text-xs text-center italic text-stone-400 mt-2">{{ $item->description }}</p>
+                            @endif
 
                             @if (count($deltas))
                                 <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3">
@@ -134,6 +140,11 @@
                             <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
                                 <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->type }}
                             </x-label>
+
+                            {{-- Flavour only — no mechanical effect, and nullable. --}}
+                            @if ($item->description)
+                                <p class="font-sans text-xs text-center italic text-stone-400 mt-2">{{ $item->description }}</p>
+                            @endif
 
                             @if (count($deltas))
                                 <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3">

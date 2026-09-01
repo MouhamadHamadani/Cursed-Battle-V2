@@ -187,10 +187,10 @@ test('committing to a fight resets the search to free, win or lose', function ()
     // Attacker one-shots: defender never dodges, strength gap swamps variance.
     $me = fighter([
         'gold' => 1000, 'health' => 200, 'max_health' => 200,
-        'strength' => 1000, 'defense' => 5, 'agility' => 5,
+        'strength' => 1000, 'defense' => 5, 'dexterity' => 5,
     ]);
-    fighter(['agility' => 0]);
-    fighter(['agility' => 0]);
+    fighter(['dexterity' => 0]);
+    fighter(['dexterity' => 0]);
 
     opponents()->find($me);                        // free
     $target = opponents()->find($me->fresh());     // paid re-roll
@@ -206,10 +206,10 @@ test('committing to a fight resets the search to free, win or lose', function ()
 
 test('losing a fight also resets the search to free', function () {
     // Mirror of the above: the defender one-shots the attacker instead.
-    $me = fighter(['gold' => 1000, 'health' => 10, 'agility' => 0]);
+    $me = fighter(['gold' => 1000, 'health' => 10, 'dexterity' => 0]);
     $them = fighter([
         'health' => 200, 'max_health' => 200,
-        'strength' => 1000, 'defense' => 5, 'agility' => 50,
+        'strength' => 1000, 'defense' => 5, 'speed' => 50, // acts first: one-shots $me before it can swing
     ]);
 
     opponents()->find($me);
@@ -225,9 +225,9 @@ test('losing a fight also resets the search to free', function () {
 test('the defender search state is untouched - they did not choose the fight', function () {
     $me = fighter([
         'health' => 200, 'max_health' => 200,
-        'strength' => 1000, 'defense' => 5, 'agility' => 5,
+        'strength' => 1000, 'defense' => 5, 'dexterity' => 5,
     ]);
-    $them = fighter(['agility' => 0]);
+    $them = fighter(['dexterity' => 0]);
     $bystander = fighter();
 
     // The defender has a search of their own in flight.

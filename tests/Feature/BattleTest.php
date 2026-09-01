@@ -8,7 +8,7 @@ use App\Services\OpponentService;
 use Livewire\Livewire;
 
 // Determinism strategy: force stats so the attacker's very first swing is a
-// guaranteed one-shot KO (defender agility 0 -> never dodges; strength gap
+// guaranteed one-shot KO (defender dexterity 0 -> never dodges; strength gap
 // swamps the ± level variance) so the outcome is deterministic even though
 // the component resolves via the app's real, unseeded secure RNG.
 test('attacking the revealed mark resolves the fight, flashes no error, logs the combat, and conserves gold between the two characters', function () {
@@ -21,7 +21,7 @@ test('attacking the revealed mark resolves the fight, flashes no error, logs the
         'max_health' => 200,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 5,
+        'dexterity' => 5,
     ]);
 
     $defenderUser = User::factory()->create();
@@ -33,7 +33,7 @@ test('attacking the revealed mark resolves the fight, flashes no error, logs the
         'max_health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
     $goldBefore = $attacker->gold + $defender->gold;
 
@@ -146,12 +146,12 @@ test('a resolved fight opens the result modal, renders the outcome banner, and c
         'health' => 200,
         'max_health' => 200,
         'strength' => 1000,
-        'agility' => 5,
+        'dexterity' => 5,
     ]);
 
     Character::create([
         'user_id' => User::factory()->create()->id,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     $this->actingAs($attackerUser);

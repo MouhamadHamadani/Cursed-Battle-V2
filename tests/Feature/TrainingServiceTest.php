@@ -14,7 +14,8 @@ function trainee(array $overrides = []): Character
         'energy' => 10,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 5,
+        'speed' => 5,
+        'dexterity' => 5,
     ], $overrides));
 }
 
@@ -54,11 +55,31 @@ test('starting a session with enough energy spends the energy immediately and re
 test('starting at exactly the energy cost boundary succeeds and leaves zero energy', function () {
     $character = trainee(['energy' => TrainingService::ENERGY_COST]);
 
-    (new TrainingService)->start($character, 'agility');
+    (new TrainingService)->start($character, 'speed');
 
     $character->refresh();
     expect($character->energy)->toEqual(0);
-    expect($character->activity_stat)->toBe('agility');
+    expect($character->activity_stat)->toBe('speed');
+});
+
+test('all four ADR-003 stats are trainable and each one lands on its own column', function () {
+    foreach (['strength', 'defense', 'speed', 'dexterity'] as $stat) {
+        $character = trainee(['energy' => TrainingService::ENERGY_COST]);
+
+        (new TrainingService)->start($character, $stat);
+        expect($character->refresh()->activity_stat)->toBe($stat);
+
+        $this->travel(6)->minutes();
+        (new TrainingService)->resolvePending($character);
+        $this->travelBack();
+
+        $character->refresh();
+        expect($character->{$stat})->toEqual(6); // the drilled stat, +1
+
+        foreach (array_diff(['strength', 'defense', 'speed', 'dexterity'], [$stat]) as $untouched) {
+            expect($character->{$untouched})->toEqual(5);
+        }
+    }
 });
 
 test('starting one energy below the cost is rejected and nothing changes', function () {
@@ -76,7 +97,10 @@ test('starting one energy below the cost is rejected and nothing changes', funct
 test('an invalid stat name is rejected and no column is touched, proving the whitelist blocks column injection', function () {
     $character = trainee(['gold' => 100]);
 
-    foreach (['level', 'gold', 'max_health'] as $invalidStat) {
+    // 'agility' is in this list on purpose: ADR-003 removed the column, and
+    // the whitelist must reject the old name rather than interpolate a
+    // non-existent column into the UPDATE.
+    foreach (['level', 'gold', 'max_health', 'agility'] as $invalidStat) {
         expect(fn () => (new TrainingService)->start($character, $invalidStat))
             ->toThrow(GameActionException::class, 'Unknown stat.');
     }
@@ -142,7 +166,8 @@ test('resolving one stat leaves the other stats unchanged', function () {
 
     $character->refresh();
     expect($character->defense)->toEqual(5);
-    expect($character->agility)->toEqual(5);
+    expect($character->speed)->toEqual(5);
+    expect($character->dexterity)->toEqual(5);
 
     $this->travelBack();
 });

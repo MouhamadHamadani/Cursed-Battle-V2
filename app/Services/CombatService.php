@@ -14,6 +14,15 @@ class CombatService
     /** Hard cap on dodge chance (%) — the draft formula's uncapped bug, fixed per ADR-001. */
     public const DODGE_CAP = 75;
 
+    /**
+     * Hard cap on miss chance (%) from a speed deficit (ADR-003). Stacks
+     * multiplicatively with DODGE_CAP: 40% × 75% = 85% worst-case whiff.
+     */
+    public const MISS_CAP = 40;
+
+    /** Speed points of deficit per 1% miss chance (ADR-003 §Tunables). */
+    public const MISS_DIVISOR = 4;
+
     /** Every landed hit deals at least this much, so HP always moves. */
     public const MIN_DAMAGE = 1;
 
@@ -44,7 +53,7 @@ class CombatService
      * aggregation point (ADR-001) — combat and any future display share
      * this; nothing else recomputes gear deltas.
      *
-     * @return array{strength: int, defense: int, agility: int}
+     * @return array{strength: int, defense: int, speed: int, dexterity: int}
      */
     public function effectiveStats(Character $character): array
     {
@@ -55,17 +64,30 @@ class CombatService
         return [
             'strength' => $character->strength + $equipped->sum(fn ($ci) => $ci->item->strength_delta),
             'defense' => $character->defense + $equipped->sum(fn ($ci) => $ci->item->defense_delta),
-            'agility' => $character->agility + $equipped->sum(fn ($ci) => $ci->item->agility_delta),
+            'speed' => $character->speed + $equipped->sum(fn ($ci) => $ci->item->speed_delta),
+            'dexterity' => $character->dexterity + $equipped->sum(fn ($ci) => $ci->item->dexterity_delta),
         ];
     }
 
     /**
      * Pure dodge-chance calculation — single source of truth, used inside
-     * the sim and directly unit-testable.
+     * the sim and directly unit-testable. Fed by dexterity since ADR-003;
+     * the formula and the cap are unchanged from ADR-001.
      */
-    public function effectiveDodgeChance(int $agility): int
+    public function effectiveDodgeChance(int $dexterity): int
     {
-        return min(intdiv($agility, 2), self::DODGE_CAP);
+        return min(intdiv($dexterity, 2), self::DODGE_CAP);
+    }
+
+    /**
+     * Pure miss-chance calculation (ADR-003) — an OPPOSED roll on the speed
+     * differential, not on absolute speed: you are hard to hit because you
+     * are faster *than your attacker*. max(0, …) means a faster-or-equal
+     * attacker never misses, so speed parity is free.
+     */
+    public function effectiveMissChance(int $attackerSpeed, int $defenderSpeed): int
+    {
+        return min(intdiv(max(0, $defenderSpeed - $attackerSpeed), self::MISS_DIVISOR), self::MISS_CAP);
     }
 
     /**
@@ -160,8 +182,10 @@ class CombatService
             'defender' => ['stats' => $this->effectiveStats($defender), 'level' => $defender->level],
         ];
 
-        // Turn order: higher effective agility first; exact tie → attacker first.
-        $order = $fighters['attacker']['stats']['agility'] >= $fighters['defender']['stats']['agility']
+        // Turn order: higher effective speed first; exact tie → attacker first.
+        // Agility owned this until ADR-003 — initiative is a question of who
+        // is quicker, so it re-homed to speed, not to dexterity.
+        $order = $fighters['attacker']['stats']['speed'] >= $fighters['defender']['stats']['speed']
             ? ['attacker', 'defender']
             : ['defender', 'attacker'];
 
@@ -199,19 +223,37 @@ class CombatService
      *
      * @param  array{attacker: array{stats: array, level: int}, defender: array{stats: array, level: int}}  $fighters
      * @param  array{attacker: int, defender: int}  &$hp
-     * @return array{round: int, actor: string, dodged: bool, damage: int, target_hp: int}
+     * @return array{round: int, actor: string, missed: bool, dodged: bool, damage: int, target_hp: int}
      */
     private function resolveTurn(int $round, string $actorKey, string $targetKey, array $fighters, array &$hp): array
     {
         $actor = $fighters[$actorKey];
         $target = $fighters[$targetKey];
 
-        $dodge = $this->effectiveDodgeChance($target['stats']['agility']);
+        // ADR-003: miss is rolled FIRST — a swing that never connects costs the
+        // defender no dodge roll. The `> 0` guard is not an optimisation: a 0%
+        // chance can never fire, and skipping the draw keeps the RNG stream
+        // identical for equal-speed fights (every pre-ADR-003 seeded test).
+        $miss = $this->effectiveMissChance($actor['stats']['speed'], $target['stats']['speed']);
+
+        if ($miss > 0 && $this->rng->getInt(1, 100) <= $miss) {
+            return [
+                'round' => $round,
+                'actor' => $actorKey,
+                'missed' => true,
+                'dodged' => false,
+                'damage' => 0,
+                'target_hp' => max(0, $hp[$targetKey]),
+            ];
+        }
+
+        $dodge = $this->effectiveDodgeChance($target['stats']['dexterity']);
 
         if ($this->rng->getInt(1, 100) <= $dodge) {
             return [
                 'round' => $round,
                 'actor' => $actorKey,
+                'missed' => false,
                 'dodged' => true,
                 'damage' => 0,
                 'target_hp' => max(0, $hp[$targetKey]),
@@ -227,6 +269,7 @@ class CombatService
         return [
             'round' => $round,
             'actor' => $actorKey,
+            'missed' => false,
             'dodged' => false,
             'damage' => $damage,
             'target_hp' => max(0, $hp[$targetKey]),

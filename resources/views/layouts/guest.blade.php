@@ -23,21 +23,26 @@
     </head>
     <body class="font-newRocker antialiased text-white">
         {{--
-            Same map as the landing hero, so arriving at the auth funnel reads
-            as the same place rather than a blank void. Three layers, bottom up:
-            <x-dark-wall>'s stone tile, the map over it at partial opacity so
-            the grain still shows through, then a vignette that pulls the edges
-            down and keeps the card legible wherever the map happens to be
-            bright. The wash is CSS only — no second image asset.
+            The empty night courtyard — the hero's siege is the promise, this is
+            where you actually arrive, so the auth funnel reads as a place rather
+            than a blank void. Three layers, bottom up: <x-dark-wall>'s stone
+            tile, the courtyard over it, then a vignette that pulls the edges
+            down and keeps the card legible.
+
+            Both layers are far lighter than the map they replaced: this art is
+            already a near-black night scene, and the old opacity-40 + heavy
+            radial buried it into an even field of black. Enough is let through
+            now that the braziers and banners actually read behind the card.
+            The wash is CSS only — no second image asset.
         --}}
         <x-dark-wall class="relative min-h-screen bg-black">
-            <div class="absolute inset-0 bg-cover bg-center opacity-40"
-                 style="background-image: url('{{ asset('images/map.png') }}');"></div>
+            <div class="absolute inset-0 bg-cover bg-center opacity-75"
+                 style="background-image: url('{{ asset('images/auth-bg.png') }}');"></div>
 
             {{-- Radial, not one of Tailwind's linear gradients: the card is
                  centred, so the falloff should be centred on it too. --}}
             <div class="absolute inset-0"
-                 style="background: radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.62) 0%, rgba(0,0,0,.90) 52%, rgba(0,0,0,.99) 100%);"></div>
+                 style="background: radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.45) 0%, rgba(0,0,0,.72) 52%, rgba(0,0,0,.93) 100%);"></div>
 
             <div class="relative flex min-h-screen flex-col items-center px-4 py-8">
                 <a href="/" class="mt-auto" wire:navigate>

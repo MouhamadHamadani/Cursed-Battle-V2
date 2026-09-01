@@ -10,7 +10,8 @@
         $stats = [
             'strength' => ['label' => __('Strength'), 'icon' => 'fa-hand-fist', 'action' => __('Train Strength')],
             'defense' => ['label' => __('Defense'), 'icon' => 'fa-shield-halved', 'action' => __('Train Defense')],
-            'agility' => ['label' => __('Agility'), 'icon' => 'fa-feather', 'action' => __('Train Agility')],
+            'speed' => ['label' => __('Speed'), 'icon' => 'fa-bolt', 'action' => __('Train Speed')],
+            'dexterity' => ['label' => __('Dexterity'), 'icon' => 'fa-feather', 'action' => __('Train Dexterity')],
         ];
     @endphp
 
@@ -20,7 +21,7 @@
             <x-flash />
 
             <x-dark-leather class="border border-yellow-700 p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
                     @foreach ($stats as $key => $stat)
                         <div>
                             <x-label class="text-yellow-500">
@@ -78,7 +79,7 @@
 
             <div class="flex flex-wrap justify-center gap-6">
                 @foreach ($stats as $key => $stat)
-                    <x-iron-scrollwork class="grid basis-full md:basis-[calc(33.333%-1rem)]">
+                    <x-iron-scrollwork class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(25%-1.125rem)]">
                     <x-dark-wall class="flex flex-col border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
                         <div class="text-center">
                             <i class="fa-duotone fa-solid {{ $stat['icon'] }} fa-3x text-yellow-500"></i>

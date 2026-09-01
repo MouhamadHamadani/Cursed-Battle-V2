@@ -67,9 +67,9 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 
 ## How to play
 
-1. **Register** — create a user account. A character is auto-created with default stats (level 1, 100 gold, 100 HP, 10 energy, and 5 in each of strength/defense/agility).
+1. **Register** — create a user account. A character is auto-created with default stats (level 1, 100 gold, 100 HP, 10 energy, and 5 in each of strength/defense/speed/dexterity).
 2. **Work** — `/work` puts you on a *shift*. Your whole energy bar is spent the moment you clock on, and the gold plus a small XP trickle land when the shift ends (5 minutes at level 1, longer as you rise). The starting job, Grave Digger, pays 2 gold per energy; higher-tier jobs pay more but gate on level. This is the core economy loop.
-3. **Train** — `/train` puts you in the yard for a *drill*. 5 energy is spent up front and the +1 to strength, defense or agility lands when the drill finishes (5 minutes at level 1, longer as you rise). Permanent gains; no cap per level.
+3. **Train** — `/train` puts you in the yard for a *drill*. 5 energy is spent up front and the +1 to strength, defense, speed or dexterity lands when the drill finishes (5 minutes at level 1, longer as you rise). Permanent gains; no cap per level.
    - **While a shift or drill is running you are locked out of everything else** — no second session, no attacking, no market. Thou art at thy labours; come back when the work is done. A countdown shows in the status bar and on the Work/Train page.
    - Nothing needs collecting: the result lands on its own the next time a page paints. Walking away just means seeing it later.
    - Being *busy* does not protect you — others can still attack you mid-shift. Only the hospital blocks incoming attacks.
@@ -82,7 +82,9 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 
 | Rule | Value |
 |------|-------|
-| Dodge chance | min(agility ÷ 2, **75%** hard cap) |
+| Miss chance | min((defender speed − attacker speed) ÷ 4, **40%** cap); a faster-or-equal attacker never misses. Rolled **before** dodge |
+| Dodge chance | min(dexterity ÷ 2, **75%** hard cap) |
+| Turn order | higher effective **speed** acts first; exact tie → attacker |
 | Combat rounds | max 10; resolve by remaining HP if no knockout |
 | Hospital cooldown | 30 minutes (blocks combat both directions only) |
 | Gold steal per win | 10% of loser's gold |
@@ -92,7 +94,7 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 | Work session | 5 min + 60s per level above 1 (5m at L1 → 54m at L50) |
 | While busy | blocks Train, Work, Battle (as attacker) and Market — **not** being attacked |
 
-For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md). For the session pacing model (duration formula, lazy resolution, the full lock), see [.claude/adr/ADR-002-timed-sessions.md](.claude/adr/ADR-002-timed-sessions.md).
+For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md). For the session pacing model (duration formula, lazy resolution, the full lock), see [.claude/adr/ADR-002-timed-sessions.md](.claude/adr/ADR-002-timed-sessions.md). For the four-stat model (why agility became speed + dexterity, the miss formula and its two tunables), see [.claude/adr/ADR-003-four-stat-split.md](.claude/adr/ADR-003-four-stat-split.md).
 
 ## Testing
 

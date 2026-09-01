@@ -15,7 +15,7 @@ use Random\Randomizer;
 
 // Determinism strategy throughout this file: inject a seeded Randomizer AND
 // force stats so the stat gap swamps the ± level variance and (for the
-// loser) agility 0 means it never dodges — outcomes below are deterministic
+// loser) dexterity 0 means it never dodges — outcomes below are deterministic
 // for ANY seed.
 test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the winner xp', function () {
     $attacker = Character::create([
@@ -26,7 +26,7 @@ test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the
         'health' => 100,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 5,
+        'dexterity' => 5,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -35,7 +35,7 @@ test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the
         'health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0, // never dodges
+        'dexterity' => 0, // never dodges
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -57,7 +57,7 @@ test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the
     expect($attacker->xp)->toBe(60); // XP_BASE 50 + loser.level(1) * XP_PER_LEVEL 10, no farm-gap halving
 });
 
-test('a defender with high effective defense and agility wins the 10-round tiebreak on remaining hp', function () {
+test('a defender with high effective defense and dexterity wins the 10-round tiebreak on remaining hp', function () {
     // Attacker: too weak to hurt the defender (floors to 1 dmg, 75% dodged) but never dodges defender's real hits.
     $attacker = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -65,7 +65,7 @@ test('a defender with high effective defense and agility wins the 10-round tiebr
         'health' => 1000,
         'strength' => 1,
         'defense' => 5,
-        'agility' => 0, // never dodges defender's hits
+        'dexterity' => 0, // never dodges defender's hits
     ]);
     // Defender: hits hard and is nearly unhittable, so it only ever loses a few chip points.
     $defender = Character::create([
@@ -74,7 +74,7 @@ test('a defender with high effective defense and agility wins the 10-round tiebr
         'health' => 1000,
         'strength' => 50,
         'defense' => 1000,
-        'agility' => 200, // dodge-capped at 75%
+        'dexterity' => 200, // dodge-capped at 75%
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -101,6 +101,119 @@ test('effectiveDodgeChance caps at 75 percent and scales linearly below the cap'
     expect($service->effectiveDodgeChance(10))->toBe(5);
 });
 
+// ---------------------------------------------------------------------------
+// ADR-003: speed governs hit chance via an OPPOSED roll on the differential.
+// ---------------------------------------------------------------------------
+
+test('effectiveMissChance is zero whenever the attacker is at least as fast as the target', function () {
+    $service = new CombatService;
+
+    expect($service->effectiveMissChance(0, 0))->toBe(0);       // both at zero
+    expect($service->effectiveMissChance(5, 5))->toBe(0);       // symmetric, the starting-stats case
+    expect($service->effectiveMissChance(500, 500))->toBe(0);   // symmetric and large — absolute speed is irrelevant
+    expect($service->effectiveMissChance(100, 40))->toBe(0);    // attacker faster: max(0, …) floors it
+    expect($service->effectiveMissChance(1000, 1))->toBe(0);    // no matter how far ahead
+});
+
+test('effectiveMissChance scales with the speed deficit and caps at MISS_CAP', function () {
+    $service = new CombatService;
+
+    // 1% per MISS_DIVISOR(4) points of deficit, truncated.
+    expect($service->effectiveMissChance(0, 4))->toBe(1);
+    expect($service->effectiveMissChance(0, 7))->toBe(1);    // intdiv truncates, never rounds up
+    expect($service->effectiveMissChance(0, 20))->toBe(5);
+    expect($service->effectiveMissChance(10, 50))->toBe(10); // differential 40, not absolute 50
+    expect($service->effectiveMissChance(0, 100))->toBe(25);
+
+    // The cap bites at a 160-point deficit and holds for any deficit beyond it.
+    expect($service->effectiveMissChance(0, 160))->toBe(CombatService::MISS_CAP);
+    expect($service->effectiveMissChance(0, 10_000))->toBe(CombatService::MISS_CAP);
+    expect($service->effectiveMissChance(900, 1060))->toBe(CombatService::MISS_CAP);
+});
+
+test('a slower attacker misses, and a miss is recorded as a miss rather than as a dodge', function () {
+    // Dodge is switched OFF (defender dexterity 0), so every whiff here can
+    // only be a miss. This is what proves the miss roll actually runs.
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 200,
+        'strength' => 30,
+        'defense' => 5,
+        'speed' => 0,   // 200 slower than the target -> MISS_CAP 40%
+        'dexterity' => 0,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 1000, // deep enough that no KO cuts the fight short
+        'strength' => 5,
+        'defense' => 5,
+        'speed' => 200,
+        'dexterity' => 0, // never dodges
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    $swings = collect($result->events)->where('actor', 'attacker');
+    expect($swings)->toHaveCount(CombatService::MAX_ROUNDS);
+
+    // Not vacuous: some swings miss AND some land, so both branches ran.
+    expect($swings->where('missed', true))->not->toBeEmpty();
+    expect($swings->where('missed', false))->not->toBeEmpty();
+
+    foreach ($swings->where('missed', true) as $event) {
+        expect($event['dodged'])->toBeFalse();  // a miss is never reported as a dodge
+        expect($event['damage'])->toBe(0);
+    }
+
+    // The mirror: the faster fighter never misses (differential floors at 0).
+    foreach (collect($result->events)->where('actor', 'defender') as $event) {
+        expect($event['missed'])->toBeFalse();
+    }
+});
+
+test('miss is rolled before dodge, so the two outcomes stay distinct in one fight', function () {
+    // Both defences maxed: 40% miss AND a 75%-capped dodge on what gets past
+    // it. Both labels must appear, and neither may be reported as the other.
+    $attacker = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 200,
+        'strength' => 30,
+        'defense' => 5,
+        'speed' => 0,
+        'dexterity' => 0,
+    ]);
+    $defender = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'health' => 1000,
+        'strength' => 5,
+        'defense' => 5,
+        'speed' => 200,   // -> 40% miss
+        'dexterity' => 200, // -> 75% dodge on anything that isn't a miss
+    ]);
+
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    $swings = collect($result->events)->where('actor', 'attacker');
+
+    $missed = $swings->where('missed', true);
+    $dodged = $swings->where('dodged', true);
+
+    expect($missed)->not->toBeEmpty();
+    expect($dodged)->not->toBeEmpty();
+
+    // Mutually exclusive by construction — a missed swing short-circuits
+    // before the dodge roll, so it can never be flagged as both.
+    expect($swings->where('missed', true)->where('dodged', true))->toBeEmpty();
+
+    foreach ($missed->merge($dodged) as $event) {
+        expect($event['damage'])->toBe(0);
+    }
+});
+
 test('every landed hit deals at least the minimum damage floor even when strength is far below defense', function () {
     $attacker = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -108,7 +221,7 @@ test('every landed hit deals at least the minimum damage floor even when strengt
         'health' => 5000,
         'strength' => 1,
         'defense' => 1000,
-        'agility' => 100,
+        'dexterity' => 100,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -116,7 +229,7 @@ test('every landed hit deals at least the minimum damage floor even when strengt
         'health' => 1000,
         'strength' => 5,
         'defense' => 1000,
-        'agility' => 0, // never dodges, so every attacker swing deterministically lands
+        'dexterity' => 0, // never dodges, so every attacker swing deterministically lands
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -140,7 +253,7 @@ test('winning a fight steals exactly the gold-steal percentage from the loser', 
         'health' => 100,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 5,
+        'dexterity' => 5,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -149,7 +262,7 @@ test('winning a fight steals exactly the gold-steal percentage from the loser', 
         'health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -166,14 +279,16 @@ test('effectiveStats reflects base stats plus only the equipped items deltas', f
         'user_id' => User::factory()->create()->id,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 5,
+        'speed' => 5,
+        'dexterity' => 5,
     ]);
     $equippedItem = Item::create([
         'name' => 'Cursed Blade',
         'type' => 'weapon',
         'strength_delta' => 10,
         'defense_delta' => -2,
-        'agility_delta' => 3,
+        'speed_delta' => 3,
+        'dexterity_delta' => 4,
         'min_level' => 1,
         'cost' => 100,
     ]);
@@ -197,10 +312,13 @@ test('effectiveStats reflects base stats plus only the equipped items deltas', f
 
     $stats = (new CombatService)->effectiveStats($character);
 
+    // Distinct deltas on speed (+3) and dexterity (+4) so a swapped pair
+    // would fail rather than silently pass on equal numbers.
     expect($stats)->toBe([
         'strength' => 15,
         'defense' => 3,
-        'agility' => 8,
+        'speed' => 8,
+        'dexterity' => 9,
     ]);
 });
 
@@ -317,7 +435,7 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
         'health' => 100,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 5,
+        'dexterity' => 5,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -326,7 +444,7 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
         'health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -344,14 +462,14 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
 
 // --- Gap-fill: turn order, in-fight dodge, anti-farm XP, zero-gold steal, non-KO tiebreak win ---
 
-test('the higher-agility defender acts first and can knock out the attacker before it swings', function () {
+test('the higher-speed defender acts first and can knock out the attacker before it swings', function () {
     $attacker = Character::create([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 50,
+        'speed' => 50,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -359,7 +477,7 @@ test('the higher-agility defender acts first and can knock out the attacker befo
         'health' => 100,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 100, // higher than attacker's 50 -> defender acts first
+        'speed' => 100, // higher than attacker's 50 -> defender acts first
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -375,14 +493,14 @@ test('the higher-agility defender acts first and can knock out the attacker befo
     expect($attacker->health)->toBe(0); // never got a turn
 });
 
-test('mirror: the higher-agility attacker acts first and can knock out the defender before it swings', function () {
+test('mirror: the higher-speed attacker acts first and can knock out the defender before it swings', function () {
     $attacker = Character::create([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
         'strength' => 1000,
         'defense' => 5,
-        'agility' => 100, // higher than defender's 50 -> attacker acts first
+        'speed' => 100, // higher than defender's 50 -> attacker acts first
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -390,7 +508,7 @@ test('mirror: the higher-agility attacker acts first and can knock out the defen
         'health' => 100,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 50,
+        'speed' => 50,
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -409,8 +527,8 @@ test('mirror: the higher-agility attacker acts first and can knock out the defen
 test('a dodge actually occurs inside a real fight and deals zero damage', function () {
     // Seed 12345 (this file's standard seed) confirmed, by running the sim
     // standalone rather than assuming: the defender's 75%-capped dodge
-    // chance (agility 150) dodges 8 of the attacker's 10 swings. Every other
-    // combat test in this file uses agility 0 (never dodges) -- this is the
+    // chance (dexterity 150) dodges 8 of the attacker's 10 swings. Every other
+    // combat test in this file uses dexterity 0 (never dodges) -- this is the
     // only test that exercises the dodged:true branch inside resolve()
     // itself (effectiveDodgeChance is otherwise only unit-tested in
     // isolation above).
@@ -420,7 +538,7 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
         'health' => 100,
         'strength' => 30,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -428,7 +546,7 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
         'health' => 300,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 150, // dodge-capped at 75%
+        'dexterity' => 150, // dodge-capped at 75%
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -457,7 +575,7 @@ test('winner xp is halved by the anti-farm gap when a high-level attacker beats 
         'level' => 1,
         'health' => 100,
         'gold' => 100,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -483,7 +601,7 @@ test('gold steal from a loser with zero gold transfers nothing and leaves both b
         'level' => 1,
         'gold' => 0,
         'health' => 100,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -511,7 +629,7 @@ test('an attacker who wins the 10-round tiebreak on remaining hp still hospitali
         'health' => 100,
         'strength' => 10,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -520,7 +638,7 @@ test('an attacker who wins the 10-round tiebreak on remaining hp still hospitali
         'health' => 120,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0, // tie -> attacker acts first
+        'dexterity' => 0, // speeds tie -> attacker acts first
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
@@ -554,7 +672,7 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
         'health' => 50,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
     $defender = Character::create([
         'user_id' => User::factory()->create()->id,
@@ -563,7 +681,7 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
         'health' => 50,
         'strength' => 5,
         'defense' => 5,
-        'agility' => 0,
+        'dexterity' => 0,
     ]);
 
     $result = (new CombatService(new Randomizer(new Mt19937(777))))->resolve($attacker, $defender);
@@ -606,10 +724,10 @@ test('a busy defender CAN still be attacked — a shift is not invulnerability',
     $attackerUser = User::factory()->create();
     $attacker = Character::create([
         'user_id' => $attackerUser->id,
-        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'agility' => 5,
+        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'dexterity' => 5,
     ]);
     $defender = Character::create([
-        'user_id' => User::factory()->create()->id, 'level' => 1, 'energy' => 10, 'agility' => 0,
+        'user_id' => User::factory()->create()->id, 'level' => 1, 'energy' => 10, 'dexterity' => 0,
     ]);
 
     app(WorkService::class)->start($defender, Occupation::create([
@@ -629,9 +747,9 @@ test('a finished session unblocks attacking without any explicit resolve call', 
     $attackerUser = User::factory()->create();
     $attacker = Character::create([
         'user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10,
-        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'agility' => 5,
+        'health' => 200, 'max_health' => 200, 'strength' => 1000, 'dexterity' => 5,
     ]);
-    $defender = Character::create(['user_id' => User::factory()->create()->id, 'agility' => 0]);
+    $defender = Character::create(['user_id' => User::factory()->create()->id, 'dexterity' => 0]);
 
     app(TrainingService::class)->start($attacker, 'strength');
 
