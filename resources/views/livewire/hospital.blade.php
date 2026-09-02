@@ -37,11 +37,15 @@
                         {{ __('You will be released :time.', ['time' => $this->character->hospitalized_until->diffForHumans()]) }}
                     </x-label>
 
-                    <div class="mt-8">
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                    <div class="mt-8 flex justify-center">
+                        <x-dark-wall class="relative w-44 border border-yellow-700 p-4">
+                            <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                            <div class="relative flex flex-col items-center text-center">
+                                <x-icon-roundel icon="fa-heart" />
+                                <x-label class="mt-2 text-xs uppercase tracking-widest text-yellow-600">{{ __('Health') }}</x-label>
+                                <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                            </div>
+                        </x-dark-wall>
                     </div>
 
                     {{-- Hospital blocks combat and nothing else (ADR-001), so the
@@ -64,13 +68,23 @@
 
                     <x-label class="font-uncialAntiqua text-4xl text-green-500 mt-5">{{ __('You are healthy and ready to fight.') }}</x-label>
 
-                    <img class="my-5 mx-auto" src="{{ asset('images/border2.png') }}" alt="">
+                    {{-- Was a loose border2.png ornament — the one image rule
+                         left in the app, at a fixed width that never matched the
+                         panel. <x-gem-divider> is the section rule Home settled
+                         on, and this branch is not blocked, so it is the gem and
+                         not the chain (the chain means "bound" and stays on the
+                         hospitalized panel above). --}}
+                    <x-gem-divider class="my-6" />
 
-                    <div class="mb-8">
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
-                        </x-label>
-                        <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                    <div class="mb-8 flex justify-center">
+                        <x-dark-wall class="relative w-44 border border-yellow-700 p-4">
+                            <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                            <div class="relative flex flex-col items-center text-center">
+                                <x-icon-roundel icon="fa-heart" />
+                                <x-label class="mt-2 text-xs uppercase tracking-widest text-yellow-600">{{ __('Health') }}</x-label>
+                                <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                            </div>
+                        </x-dark-wall>
                     </div>
 
                     <x-button :href="route('battle')" wire:navigate>
