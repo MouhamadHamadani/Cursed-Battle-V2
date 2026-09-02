@@ -7,13 +7,42 @@
         @php
             $xpThreshold = app(\App\Services\LevelingService::class)->threshold($character->level);
             $pct = fn (int $value, int $max) => $max > 0 ? min(100, max(0, round($value / $max * 100))) : 0;
+
+            // Read once here, used by the banners below and by the quick-link
+            // cards at the foot of the page. Both are the model's own time
+            // comparisons — this view decides nothing, it only renders what the
+            // services already enforce.
+            $busy = $character->isBusy();
+            $hospitalized = $character->isHospitalized();
         @endphp
 
-        @if ($character->isHospitalized())
+        {{-- Status banners. The strip above already badges both states on every
+             page; these say the same thing louder because Home is where a
+             player stops to read, and they pair with the card states below —
+             the banner says what is true and until when, the cards say which of
+             the four options it closes. Both can be true at once. --}}
+        @if ($hospitalized)
             <x-dark-wall class="border border-red-900 p-4 mb-6 text-center">
-                <x-label class="text-xl text-red-500">
+                <x-label class="text-2xl text-red-500">
                     <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>
                     {{ __('In hospital — released :time.', ['time' => $character->hospitalized_until->diffForHumans()]) }}
+                </x-label>
+            </x-dark-wall>
+        @endif
+
+        @if ($busy)
+            {{-- Gold, not red: a session in progress is the character working
+                 as intended, not a punishment. Hospital keeps the red. --}}
+            <x-dark-wall class="border border-yellow-700 p-4 mb-6 text-center">
+                <x-label class="text-2xl text-yellow-500">
+                    <i class="fa-duotone fa-solid {{ $character->activity_type === 'work' ? 'fa-hammer' : 'fa-dumbbell' }} me-2"></i>
+                    {{ ucfirst(\App\Services\ActivityService::describe($character->activity_type)) }}
+                </x-label>
+                {{-- A second countdown alongside the status bar's is the shape
+                     <x-activity-countdown> was built for, and resolvePending()
+                     is documented idempotent for exactly this reason. --}}
+                <x-label class="text-4xl mt-2">
+                    <x-activity-countdown :completes-at="$character->activity_completes_at" />
                 </x-label>
             </x-dark-wall>
         @endif
@@ -106,19 +135,57 @@
         </x-dark-leather>
         </x-iron-scrollwork>
 
-        {{-- Quick links to the four places a character can spend a turn. --}}
+        {{-- Quick links to the four places a character can spend a turn.
+
+             This is what keeps the cards from being four more town-map markers:
+             the map is navigation and cannot know the character's state, while
+             these show which of the four are currently closed and why. The two
+             rules are read off the model, not decided here —
+               busy         -> all four (ADR-002 §4)
+               hospitalized -> Battle only; hospital blocks combat and nothing
+                               else, Work/Train/Market stay open (ADR-001)
+             Blocked cards stay links on purpose: Work and Train are where the
+             countdown and the in-character copy live, so a busy player heading
+             there is going somewhere useful. --}}
+        @php
+            $blocked = fn (bool $whenHospitalized = false) => $busy ? 'busy' : (($whenHospitalized && $hospitalized) ? 'hospital' : null);
+            $links = [
+                ['route' => 'work', 'label' => __('Work'), 'icon' => 'fa-hammer', 'blurb' => __('Trade energy for gold.'), 'blocked' => $blocked()],
+                ['route' => 'train', 'label' => __('Train'), 'icon' => 'fa-dumbbell', 'blurb' => __('Sharpen thy stats.'), 'blocked' => $blocked()],
+                ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.'), 'blocked' => $blocked()],
+                ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.'), 'blocked' => $blocked(true)],
+            ];
+        @endphp
+
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            @foreach ([
-                ['route' => 'work', 'label' => __('Work'), 'icon' => 'fa-hammer', 'blurb' => __('Trade energy for gold.')],
-                ['route' => 'train', 'label' => __('Train'), 'icon' => 'fa-dumbbell', 'blurb' => __('Sharpen thy stats.')],
-                ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.')],
-                ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.')],
-            ] as $link)
-                <a href="{{ route($link['route']) }}" wire:navigate>
-                    <x-dark-wall class="h-full border border-yellow-700 p-6 text-center hover:border-yellow-500 transition duration-300">
-                        <i class="fa-duotone fa-solid {{ $link['icon'] }} fa-3x text-yellow-500"></i>
-                        <x-label class="text-2xl mt-3">{{ $link['label'] }}</x-label>
-                        <p class="mt-1 font-sans text-xs text-stone-400">{{ $link['blurb'] }}</p>
+            @foreach ($links as $link)
+                {{-- `group` + focus-visible on the panel, copied from the town-map
+                     markers: the hover affordance used to sit on the inner panel
+                     with nothing on the anchor, so a keyboard user got no
+                     feedback at all. The ring is outside the blocked branches so
+                     focus stays visible on a demoted card too. --}}
+                <a href="{{ route($link['route']) }}" wire:navigate class="group focus:outline-none">
+                    <x-dark-wall @class([
+                        'h-full border p-6 text-center transition duration-300 group-focus-visible:ring-1 group-focus-visible:ring-yellow-500',
+                        'border-yellow-700 group-hover:border-yellow-500 group-focus-visible:border-yellow-500' => ! $link['blocked'],
+                        // No hover promise on a blocked card — the border stays put.
+                        'border-stone-700' => (bool) $link['blocked'],
+                    ])>
+                        <i class="fa-duotone fa-solid {{ $link['icon'] }} fa-3x {{ $link['blocked'] ? 'text-stone-600' : 'text-yellow-500' }}"></i>
+                        <x-label @class(['text-2xl mt-3', 'text-stone-400' => (bool) $link['blocked']])>{{ $link['label'] }}</x-label>
+
+                        {{-- The evergreen blurb gives way to the reason: at two
+                             columns wide there is room for one line, and which
+                             door is shut right now beats what is behind it. --}}
+                        <p class="mt-1 font-sans text-xs text-stone-400">
+                            @if ($link['blocked'] === 'busy')
+                                <i class="fa-duotone fa-solid fa-hourglass-half me-1"></i>{{ __('Busy') }}
+                            @elseif ($link['blocked'] === 'hospital')
+                                <i class="fa-duotone fa-solid fa-kit-medical me-1"></i>{{ __('In hospital') }}
+                            @else
+                                {{ $link['blurb'] }}
+                            @endif
+                        </p>
                     </x-dark-wall>
                 </a>
             @endforeach
