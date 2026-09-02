@@ -108,6 +108,8 @@
             </button>
         </div>
 
+        <x-gem-divider small />
+
         {{-- Vitals: the three bars a fighter reads first. --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <x-dark-wall class="relative border border-yellow-700 p-4">
@@ -180,6 +182,8 @@
             </x-dark-wall>
         </div>
 
+        <x-gem-divider small />
+
         {{-- Standing and stats.
 
              Icons are new here — the row had none. Two of the five diverge from
@@ -219,6 +223,8 @@
         </div>
         </x-dark-leather>
         </x-iron-scrollwork>
+
+        <x-gem-divider class="mx-auto max-w-2xl" />
 
         {{-- Quick links to the four places a character can spend a turn.
 
