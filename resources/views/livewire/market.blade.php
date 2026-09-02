@@ -6,6 +6,13 @@
     </x-slot>
 
     @php
+        // Read once. The market is part of ADR-002's full lock — MarketService
+        // refuses buy, equip and unequip alike while a session runs — so this is
+        // the one state that closes every action on the page. Hospital is
+        // deliberately NOT here: it blocks combat and nothing else (ADR-001),
+        // which is exactly what Home's quick-link cards say.
+        $busy = $this->character->isBusy();
+
         // Stat deltas kept as values, not a pre-joined string, so each can be
         // coloured green/red the way V1 does. This is the POPUP's view of an
         // item — all four, zeroes included. Cards get $headlineOf instead.
@@ -64,6 +71,32 @@
 
             <x-flash />
 
+            @if ($this->character->isBusy())
+                {{-- The page had no busy branch at all: MarketService guards buy,
+                     equip and unequip alike, but the view said nothing and every
+                     button stayed lit until the click bounced off
+                     'The merchants will not serve thee while thou art ...'.
+                     Same panel shape as Work and Train, chain included — the
+                     chain reads as "bound" and belongs to a blocked panel. --}}
+                @php
+                    $shuttered = [
+                        'The stalls are shuttered to thee while thy hands are full elsewhere.',
+                        'No merchant haggles with a man already spoken for. Finish thy task.',
+                        'Thy purse stays shut till thy work is done. The wares will keep.',
+                        'The traders know a busy man when they see one. Come back unburdened.',
+                        'Trade waits on idle hands, and thine are not. Return when thou art free.',
+                    ];
+                @endphp
+                <x-dark-wall class="border border-yellow-700 p-6 text-center">
+                    <i class="fa-duotone fa-solid fa-treasure-chest fa-2x text-yellow-500"></i>
+                    <x-chain-divider class="mt-4" />
+                    <x-label class="text-xl text-yellow-500 mt-3">{{ $shuttered[array_rand($shuttered)] }}</x-label>
+                    <x-label class="text-4xl mt-4">
+                        <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
+                    </x-label>
+                </x-dark-wall>
+            @endif
+
             {{-- Shop --}}
             <div>
                 <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
@@ -105,10 +138,20 @@
                                          :icon="$iconOf($item->slot)"
                                          :slot-label="$slotLabel($item->slot)"
                                          :headline="$headlineOf($item)"
-                                         :affordable="$affordable">
+                                         :affordable="$affordable"
+                                         :closed="$busy">
+                                {{-- Precedence, same rule as Work and Train: a
+                                     status that removes the action entirely wins
+                                     (Owned), then the broad state lock (Busy),
+                                     then the item's own standing gate (Locked),
+                                     then the resource shortfall. --}}
                                 @if ($owned)
                                     <x-button class="w-full" disable>
                                         <i class="fa-duotone fa-solid fa-circle-check me-2"></i>{{ __('Owned') }}
+                                    </x-button>
+                                @elseif ($busy)
+                                    <x-button class="w-full" disable>
+                                        <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
                                     </x-button>
                                 @elseif ($locked)
                                     <x-button class="w-full" disable>
@@ -157,8 +200,13 @@
                                          :icon="$iconOf($item->slot)"
                                          :slot-label="$slotLabel($item->slot)"
                                          :headline="$headlineOf($item)"
-                                         :equipped="$characterItem->equipped">
-                                @if ($characterItem->equipped)
+                                         :equipped="$characterItem->equipped"
+                                         :closed="$busy">
+                                @if ($busy)
+                                    <x-button class="w-full" disable>
+                                        <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                                    </x-button>
+                                @elseif ($characterItem->equipped)
                                     <x-secondary-button
                                         class="w-full"
                                         wire:click="unequip({{ $characterItem->item_id }})"
@@ -245,7 +293,13 @@
                 {{-- One action, matching whichever applies right now, so acting
                      never means closing the popup first. --}}
                 <div class="mt-8">
-                    @if ($ownedRow && $ownedRow->equipped)
+                    @if ($busy)
+                        {{-- The popup is a second entry point to the same three
+                             actions, so it takes the same lock. --}}
+                        <x-button class="w-full" disable>
+                            <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                        </x-button>
+                    @elseif ($ownedRow && $ownedRow->equipped)
                         <x-secondary-button class="w-full" wire:click="unequip({{ $detail->id }})"
                                             wire:target="unequip" wire:loading.attr="disabled">
                             {{ __('Unequip') }}

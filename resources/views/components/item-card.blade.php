@@ -6,6 +6,7 @@
     'headline' => null,
     'equipped' => false,
     'affordable' => true,
+    'closed' => false,
 ])
 
 {{--
@@ -18,7 +19,19 @@
     a deliberate positive/negative split) a card that shows everything starts
     competing with its own action button for space.
 --}}
-<x-dark-wall class="flex flex-col border p-5 transition duration-300 {{ $equipped ? 'border-green-500' : 'border-yellow-700 hover:border-yellow-500' }}">
+{{--
+    `closed` is the page-wide lock (a Work/Train session in progress, which
+    MarketService refuses every action under). It drops the hover promise the
+    way Home demotes a blocked quick link. Equipped keeps its green even while
+    closed: that is a status, not an affordance, and losing it would hide which
+    item is actually worn.
+
+    Only the page-wide lock demotes. A locked-by-level or unaffordable card
+    keeps its gold border on purpose — those are normal, expected states while
+    browsing a shop, and the card already says so in red on the cost and in the
+    button. Dimming a third of the catalogue permanently reads as broken.
+--}}
+<x-dark-wall class="relative flex flex-col border p-5 transition duration-300 {{ $equipped ? 'border-green-500' : ($closed ? 'border-stone-700' : 'border-yellow-700 hover:border-yellow-500') }}">
     {{-- The card art is the "more details" entry point; the action button below
          stays the fast path. --}}
     <button type="button" class="group relative block w-full"
