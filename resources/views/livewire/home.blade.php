@@ -209,7 +209,12 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             @foreach ($stats as $stat)
-                <x-dark-wall class="relative border border-yellow-700/60 p-4">
+                {{-- Full yellow-700, not the /60 the concept used to make these
+                     recede: measured against the dark_wall texture the faded
+                     border is 1.98:1, under the 3:1 a UI boundary owes. The
+                     recession comes from cell size and the smaller roundel
+                     instead. --}}
+                <x-dark-wall class="relative border border-yellow-700 p-4">
                     <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
                     <div class="relative flex flex-col items-center text-center">
                         <x-icon-roundel :icon="$stat['icon']" />
