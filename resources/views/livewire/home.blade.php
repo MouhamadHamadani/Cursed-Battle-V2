@@ -160,12 +160,17 @@
              countdown and the in-character copy live, so a busy player heading
              there is going somewhere useful. --}}
         @php
-            $blocked = fn (bool $whenHospitalized = false) => $busy ? 'busy' : (($whenHospitalized && $hospitalized) ? 'hospital' : null);
+            // Two values rather than one predicate with a flag, so each card
+            // says at its own line which rule closes it. Busy outranks hospital
+            // on Battle because it is the broader lock.
+            $closed = $busy ? 'busy' : null;
+            $closedForCombat = $closed ?? ($hospitalized ? 'hospital' : null);
+
             $links = [
-                ['route' => 'work', 'label' => __('Work'), 'icon' => 'fa-hammer', 'blurb' => __('Trade energy for gold.'), 'blocked' => $blocked()],
-                ['route' => 'train', 'label' => __('Train'), 'icon' => 'fa-dumbbell', 'blurb' => __('Sharpen thy stats.'), 'blocked' => $blocked()],
-                ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.'), 'blocked' => $blocked()],
-                ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.'), 'blocked' => $blocked(true)],
+                ['route' => 'work', 'label' => __('Work'), 'icon' => 'fa-hammer', 'blurb' => __('Trade energy for gold.'), 'blocked' => $closed],
+                ['route' => 'train', 'label' => __('Train'), 'icon' => 'fa-dumbbell', 'blurb' => __('Sharpen thy stats.'), 'blocked' => $closed],
+                ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.'), 'blocked' => $closed],
+                ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.'), 'blocked' => $closedForCombat],
             ];
         @endphp
 
@@ -239,7 +244,7 @@
     @else
         <div class="py-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <x-label class="text-xl text-red-500 text-center">{{ __('No character found.') }}</x-label>
+                <x-label class="text-2xl text-red-500 text-center">{{ __('No character found.') }}</x-label>
             </div>
         </div>
     @endif
