@@ -51,6 +51,35 @@
             </x-dark-wall>
         @endif
 
+        {{-- Hero: rank is the sheet's focal point, so Level leaves the stat
+             grid below and becomes a medallion. --}}
+        <div class="flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+            {{-- The shared <x-wax-seal> at medallion scale with two ribbon tails
+                 hung behind it. Single use, so the tails are inline markup and
+                 not a second component. The number sits BESIDE the seal rather
+                 than inside it: the seal's centre is its crossed blades, and a
+                 numeral laid over them is unreadable at any size. --}}
+            {{-- pb-6 on the outer box reserves the hanging tails' overflow, so
+                 the row below is not overlapped. The tails anchor to top-full
+                 (the seal's own bottom edge) and are pulled back up behind the
+                 disc — anchoring them to the padded box instead leaves them
+                 floating clear of the seal as two detached shields. --}}
+            <div class="shrink-0 pb-6">
+                <div class="relative">
+                    <x-wax-seal :size="104" class="relative z-10 block" />
+                    <div aria-hidden="true" class="absolute inset-x-0 top-full z-0 flex -translate-y-4 justify-center gap-5">
+                        <span class="h-10 w-7 -rotate-12 bg-gradient-to-b from-red-900 to-black [clip-path:polygon(0_0,100%_0,100%_62%,50%_100%,0_62%)]"></span>
+                        <span class="h-10 w-7 rotate-12 bg-gradient-to-b from-red-900 to-black [clip-path:polygon(0_0,100%_0,100%_62%,50%_100%,0_62%)]"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center sm:text-start">
+                <x-label class="text-sm uppercase tracking-widest text-yellow-600">{{ __('Level') }}</x-label>
+                <x-label class="font-uncialAntiqua text-5xl">{{ $character->level }}</x-label>
+            </div>
+        </div>
+
         {{-- Vitals: the three bars a fighter reads first. --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <x-dark-wall class="border border-yellow-700 p-4">
@@ -107,18 +136,10 @@
         </button>
 
         {{-- Standing and stats. --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
-            {{-- Rank badge at the 40px floor <x-wax-seal> documents for itself.
-                 It was 36 to match the text-3xl line box exactly, but below 40
-                 the sigil collapses into a red disc with a cross and reads as an
-                 error glyph; the 4px this adds to the row is the cheaper cost. --}}
-            <div>
-                <x-label class="text-yellow-500">{{ __('Level') }}</x-label>
-                <div class="flex items-center justify-center gap-2">
-                    <x-wax-seal :size="40" />
-                    <x-label class="text-3xl">{{ $character->level }}</x-label>
-                </div>
-            </div>
+        {{-- Five cells, not six: Level is the medallion above now. The old
+             lg:grid-cols-6 would leave a hole, so the row gets its own column
+             plan — 2 up to sm, 3 through lg, 5 across on desktop. --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
             <div>
                 <x-label class="text-yellow-500">
                     <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}

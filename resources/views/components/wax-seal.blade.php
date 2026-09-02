@@ -2,7 +2,8 @@
 
 {{--
     Wax-seal stamp: blood-red wax disc, gold sigil ring, crossed blades to echo
-    the logo. A focal badge — keep it small (40–70px), never a background.
+    the logo. A focal badge. Small beside a figure (40–70px); Home uses it at 104px as the
+    level medallion, which the viewBox scales to cleanly. Never a background.
 --}}
 <svg {{ $attributes->merge(['class' => 'shrink-0']) }}
      width="{{ $size }}" height="{{ $size }}" viewBox="0 0 64 64"
