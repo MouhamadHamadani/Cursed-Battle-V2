@@ -8,7 +8,66 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
+            @php
+                // The three locks CombatService and OpponentService enforce on
+                // the attacker. Read off the model — this view decides nothing,
+                // it only says out loud what the services already refuse.
+                //
+                // Battle is the one page hospital actually closes (ADR-001), and
+                // until now it said nothing at all: Attack and Seek stayed lit
+                // and the click bounced off a flash error.
+                $hospitalized = $this->character->isHospitalized();
+                $busy = $this->character->isBusy();
+                $noHealth = $this->character->health <= 0;
+
+                // Which reason the buttons name. Busy outranks hospital, the same
+                // precedence Home's Battle quick-link uses — busy is the broader
+                // lock. Both banners still show below when both are true.
+                // ADR-002 fork 1: busy blocks attacking, not being attacked.
+                $cannotFight = $busy ? 'busy'
+                    : ($hospitalized ? 'hospital'
+                    : ($noHealth ? 'health' : null));
+
+                // Searching is blocked by the same two states but not by health —
+                // OpponentService::find() lets a spent fighter line up a mark.
+                $cannotSearch = $busy ? 'busy' : ($hospitalized ? 'hospital' : null);
+            @endphp
+
             <x-flash />
+
+            {{-- Status banners, the pair Home renders and for the same reason:
+                 the banner says what is true and until when, the controls below
+                 say which action it closes. Both can be true at once. --}}
+            @if ($hospitalized)
+                <x-dark-wall class="border border-red-900 p-4 text-center">
+                    <x-label class="text-2xl text-red-500">
+                        <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>
+                        {{ __('In hospital — released :time.', ['time' => $this->character->hospitalized_until->diffForHumans()]) }}
+                    </x-label>
+                    {{-- Home's banner states it and stops, which is right on a page
+                         hospital does not close. Here it does, so the banner also
+                         points at the ward — the bedside panel and the countdown. --}}
+                    <div class="mt-4">
+                        <x-button :href="route('hospital')" wire:navigate>
+                            <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>{{ __('To the Hospital') }}
+                        </x-button>
+                    </div>
+                </x-dark-wall>
+            @endif
+
+            @if ($busy)
+                {{-- Gold, not red: a session in progress is the character working
+                     as intended, not a punishment. Hospital keeps the red. --}}
+                <x-dark-wall class="border border-yellow-700 p-4 text-center">
+                    <x-label class="text-2xl text-yellow-500">
+                        <i class="fa-duotone fa-solid {{ $this->character->activity_type === 'work' ? 'fa-hammer' : 'fa-dumbbell' }} me-2"></i>
+                        {{ ucfirst(\App\Services\ActivityService::describe($this->character->activity_type)) }}
+                    </x-label>
+                    <x-label class="text-4xl mt-2">
+                        <x-activity-countdown :completes-at="$this->character->activity_completes_at" />
+                    </x-label>
+                </x-dark-wall>
+            @endif
 
             {{-- The challenger --}}
             <x-dark-leather class="border border-yellow-700 p-6">
@@ -74,14 +133,28 @@
                             </div>
 
                             <div class="mt-auto pt-6 flex flex-col sm:flex-row gap-3">
-                                <x-button
-                                    class="flex-1"
-                                    target="attack"
-                                    wire:click="attack"
-                                    wire:loading.attr="disabled"
-                                >
-                                    <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Attack') }}
-                                </x-button>
+                                @if ($cannotFight === 'busy')
+                                    <x-button class="flex-1" disable>
+                                        <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                                    </x-button>
+                                @elseif ($cannotFight === 'hospital')
+                                    <x-button class="flex-1" disable>
+                                        <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>{{ __('In hospital') }}
+                                    </x-button>
+                                @elseif ($cannotFight === 'health')
+                                    <x-button class="flex-1" disable>
+                                        <i class="fa-duotone fa-solid fa-heart-crack me-2"></i>{{ __('No health to fight') }}
+                                    </x-button>
+                                @else
+                                    <x-button
+                                        class="flex-1"
+                                        target="attack"
+                                        wire:click="attack"
+                                        wire:loading.attr="disabled"
+                                    >
+                                        <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Attack') }}
+                                    </x-button>
+                                @endif
 
                                 {{-- Rejecting this face is what costs; the price
                                      climbs until a fight is actually fought. --}}
@@ -89,7 +162,7 @@
                                     class="flex-1"
                                     wire:click="search"
                                     wire:loading.attr="disabled"
-                                    :disabled="$tooPoorToReroll"
+                                    :disabled="$tooPoorToReroll || (bool) $cannotSearch"
                                 >
                                     <i class="fa-duotone fa-solid fa-arrows-rotate me-2"></i>{{ __('Seek Another') }}
                                     <span class="ms-2 text-white">
@@ -107,9 +180,19 @@
                             </p>
 
                             <div class="mt-6">
-                                <x-button target="search" wire:click="search" wire:loading.attr="disabled">
-                                    <i class="fa-duotone fa-solid fa-magnifying-glass me-2"></i>{{ __('Seek an Opponent') }}
-                                </x-button>
+                                @if ($cannotSearch === 'busy')
+                                    <x-button disable>
+                                        <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                                    </x-button>
+                                @elseif ($cannotSearch === 'hospital')
+                                    <x-button disable>
+                                        <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>{{ __('In hospital') }}
+                                    </x-button>
+                                @else
+                                    <x-button target="search" wire:click="search" wire:loading.attr="disabled">
+                                        <i class="fa-duotone fa-solid fa-magnifying-glass me-2"></i>{{ __('Seek an Opponent') }}
+                                    </x-button>
+                                @endif
                             </div>
                         </x-dark-wall>
                     @endif
