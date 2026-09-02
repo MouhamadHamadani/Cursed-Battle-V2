@@ -32,12 +32,28 @@
     button. Dimming a third of the catalogue permanently reads as broken.
 --}}
 <x-dark-wall class="relative flex flex-col border p-5 transition duration-300 {{ $equipped ? 'border-green-500' : ($closed ? 'border-stone-700' : 'border-yellow-700 hover:border-yellow-500') }}">
+    {{-- Both colours written out literally: <x-brass-corners> reads its class
+         through a prop, and Tailwind only builds classes it can see in the
+         calling file. --}}
+    <x-brass-corners class="h-3 w-3 {{ $closed ? 'text-stone-700' : 'text-yellow-700/70' }}" />
+
     {{-- The card art is the "more details" entry point; the action button below
          stays the fast path. --}}
     <button type="button" class="group relative block w-full"
             wire:click="selectItem({{ $item->id }})"
             aria-label="{{ __('Details for :name', ['name' => $item->name]) }}">
-        <img class="h-40 w-full object-contain" src="{{ $art }}" alt="{{ $item->name }}">
+        @if ($art)
+            <img class="h-40 w-full object-contain" src="{{ $art }}" alt="{{ $item->name }}">
+        @else
+            {{-- No art of its own. Every item's `image` is still null, so the old
+                 crest fallback drew the same flaming skull on all eleven cards —
+                 a badge that said nothing. Home's roundel says the slot instead,
+                 which is the one thing a placeholder can honestly tell you, and
+                 it yields to real art the moment an item has any. --}}
+            <span class="flex h-40 w-full items-center justify-center">
+                <x-icon-roundel size="lg" :icon="$icon" :muted="$closed" />
+            </span>
+        @endif
         <i class="fa-duotone fa-solid fa-circle-info absolute top-0 end-0 text-yellow-700 group-hover:text-yellow-500 transition"></i>
     </button>
 

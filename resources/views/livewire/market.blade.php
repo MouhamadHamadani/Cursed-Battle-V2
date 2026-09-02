@@ -43,10 +43,12 @@
             return $best;
         };
 
-        // Items carry no art yet (image column is nullable) — fall back to the crest.
+        // Null when the item has no art of its own. The card and the popup each
+        // fall back to a slot roundel rather than to the crest, which drew the
+        // same flaming skull on every one of them.
         $artOf = fn ($item) => $item->image && file_exists(public_path($item->image))
             ? asset($item->image)
-            : asset('images/logo 2.png');
+            : null;
 
         $iconOf = fn (string $slot) => match ($slot) {
             'shield' => 'fa-shield-halved',
@@ -99,7 +101,7 @@
 
             {{-- Shop --}}
             <div>
-                <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
+                <x-label as="h2" class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
                     <i class="fa-duotone fa-solid fa-treasure-chest me-2"></i>{{ __('Shop') }}
                 </x-label>
 
@@ -128,12 +130,14 @@
                             $affordable = $this->character->gold >= $item->cost;
                         @endphp
 
-                        {{-- wire:key moves out to the wrapper with the flex basis:
-                             it has to sit on the loop iteration's root element,
-                             and the scrollwork is now that element. --}}
-                        <x-iron-scrollwork wire:key="shop-{{ $item->id }}"
-                                           class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
-                            <x-item-card :item="$item"
+                        {{-- The per-card <x-iron-scrollwork> is gone: scrollwork
+                             wraps a page's outer sheet, brass corners mark the
+                             cards inside it, and the card now carries its own
+                             brass corners. wire:key comes back onto the card,
+                             which is the loop iteration's root element again. --}}
+                        <x-item-card wire:key="shop-{{ $item->id }}"
+                                     class="basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]"
+                                     :item="$item"
                                          :art="$artOf($item)"
                                          :icon="$iconOf($item->slot)"
                                          :slot-label="$slotLabel($item->slot)"
@@ -169,8 +173,7 @@
                                         {{ __('Buy') }}
                                     </x-button>
                                 @endif
-                            </x-item-card>
-                        </x-iron-scrollwork>
+                        </x-item-card>
                     @empty
                         <x-label class="text-stone-400">
                             {{ __('No :slot wares are offered to you yet.', ['slot' => strtolower($slotLabel($this->shopSlot))]) }}
@@ -179,11 +182,11 @@
                 </div>
             </div>
 
-            <x-divider />
+            <x-gem-divider class="mx-auto max-w-2xl" />
 
             {{-- Inventory --}}
             <div>
-                <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
+                <x-label as="h2" class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
                     <i class="fa-duotone fa-solid fa-sack me-2"></i>{{ __('Inventory') }}
                 </x-label>
 
@@ -191,11 +194,11 @@
                     @forelse ($this->inventory as $characterItem)
                         @php $item = $characterItem->item; @endphp
 
-                        <x-iron-scrollwork wire:key="inv-{{ $characterItem->id }}"
-                                           class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
-                            {{-- Same card as the Shop: an owned item gets no
-                                 richer treatment just because the list is shorter. --}}
-                            <x-item-card :item="$item"
+                        {{-- Same card as the Shop: an owned item gets no richer
+                             treatment just because the list is shorter. --}}
+                        <x-item-card wire:key="inv-{{ $characterItem->id }}"
+                                     class="basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]"
+                                     :item="$item"
                                          :art="$artOf($item)"
                                          :icon="$iconOf($item->slot)"
                                          :slot-label="$slotLabel($item->slot)"
@@ -225,8 +228,7 @@
                                         {{ __('Equip') }}
                                     </x-button>
                                 @endif
-                            </x-item-card>
-                        </x-iron-scrollwork>
+                        </x-item-card>
                     @empty
                         <x-label class="text-stone-400">{{ __('You have no items yet.') }}</x-label>
                     @endforelse
@@ -250,7 +252,13 @@
             @endphp
 
             <div class="p-8 text-center">
-                <img class="h-56 w-full object-contain" src="{{ $artOf($detail) }}" alt="{{ $detail->name }}">
+                @if ($artOf($detail))
+                    <img class="h-56 w-full object-contain" src="{{ $artOf($detail) }}" alt="{{ $detail->name }}">
+                @else
+                    <span class="flex h-56 w-full items-center justify-center">
+                        <x-icon-roundel size="lg" :icon="$iconOf($detail->slot)" />
+                    </span>
+                @endif
 
                 <x-label class="font-uncialAntiqua text-3xl text-yellow-500 mt-4">{{ $detail->name }}</x-label>
                 <x-label class="block text-xs uppercase tracking-widest text-stone-400 mt-1">
