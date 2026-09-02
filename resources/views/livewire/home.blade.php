@@ -1,9 +1,13 @@
 <div>
     @if ($character)
         <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <x-iron-scrollwork>
         <x-dark-leather class="border border-yellow-700 p-6">
+        {{-- One rhythm for the sheet rather than a per-block mb-*: the gaps were
+             6/8/8/none and read as uneven, which is the kind of thing a player
+             feels without being able to name. --}}
+        <div class="space-y-8">
         @php
             $xpThreshold = app(\App\Services\LevelingService::class)->threshold($character->level);
             $pct = fn (int $value, int $max) => $max > 0 ? min(100, max(0, round($value / $max * 100))) : 0;
@@ -22,7 +26,7 @@
              the banner says what is true and until when, the cards say which of
              the four options it closes. Both can be true at once. --}}
         @if ($hospitalized)
-            <x-dark-wall class="border border-red-900 p-4 mb-6 text-center">
+            <x-dark-wall class="border border-red-900 p-4 text-center">
                 <x-label class="text-2xl text-red-500">
                     <i class="fa-duotone fa-solid fa-kit-medical me-2"></i>
                     {{ __('In hospital — released :time.', ['time' => $character->hospitalized_until->diffForHumans()]) }}
@@ -33,7 +37,7 @@
         @if ($busy)
             {{-- Gold, not red: a session in progress is the character working
                  as intended, not a punishment. Hospital keeps the red. --}}
-            <x-dark-wall class="border border-yellow-700 p-4 mb-6 text-center">
+            <x-dark-wall class="border border-yellow-700 p-4 text-center">
                 <x-label class="text-2xl text-yellow-500">
                     <i class="fa-duotone fa-solid {{ $character->activity_type === 'work' ? 'fa-hammer' : 'fa-dumbbell' }} me-2"></i>
                     {{ ucfirst(\App\Services\ActivityService::describe($character->activity_type)) }}
@@ -48,7 +52,7 @@
         @endif
 
         {{-- Vitals: the three bars a fighter reads first. --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <x-dark-wall class="border border-yellow-700 p-4">
                 <div class="flex items-center justify-between mb-2">
                     <x-label class="text-yellow-500">
@@ -94,7 +98,7 @@
 
         {{-- Faction. Click through for the banner's own page. --}}
         <button type="button" wire:click="$set('showFaction', true)"
-                class="group block w-full mb-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
+                class="group block w-full focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
             <x-dark-wall class="border border-yellow-700 p-4 flex items-center justify-center gap-3 transition duration-300 group-hover:border-yellow-500 group-focus-visible:border-yellow-500">
                 <i class="fa-duotone fa-solid fa-flag-swallowtail text-yellow-500"></i>
                 <x-label class="text-yellow-500">{{ __('Faction') }}</x-label>
@@ -104,13 +108,14 @@
 
         {{-- Standing and stats. --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
-            {{-- Rank badge. Sized to the text-3xl line box on purpose so the
-                 seal sits beside the number without making this one cell taller
-                 than the four next to it. --}}
+            {{-- Rank badge at the 40px floor <x-wax-seal> documents for itself.
+                 It was 36 to match the text-3xl line box exactly, but below 40
+                 the sigil collapses into a red disc with a cross and reads as an
+                 error glyph; the 4px this adds to the row is the cheaper cost. --}}
             <div>
                 <x-label class="text-yellow-500">{{ __('Level') }}</x-label>
                 <div class="flex items-center justify-center gap-2">
-                    <x-wax-seal :size="36" />
+                    <x-wax-seal :size="40" />
                     <x-label class="text-3xl">{{ $character->level }}</x-label>
                 </div>
             </div>
@@ -138,6 +143,7 @@
             </div>
         </div>
 
+        </div>
         </x-dark-leather>
         </x-iron-scrollwork>
 
@@ -232,7 +238,7 @@
         </x-dark-modal>
     @else
         <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <x-label class="text-xl text-red-500 text-center">{{ __('No character found.') }}</x-label>
             </div>
         </div>
