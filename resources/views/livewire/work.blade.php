@@ -54,7 +54,7 @@
                 </x-dark-wall>
             @endif
 
-            <x-divider />
+            <x-gem-divider class="mx-auto max-w-2xl" />
 
             <div class="flex flex-wrap justify-center gap-6">
                 @foreach ($this->occupations as $occupation)
@@ -78,25 +78,30 @@
                             : ($this->character->energy < 1 ? 'spent' : null));
                     @endphp
 
-                    {{-- The scrollwork wrapper takes the flex basis and is a grid
-                         so its single child fills it — the card still needs full
-                         height for the mt-auto button row to sit on the bottom. --}}
-                    <x-iron-scrollwork class="grid basis-full md:basis-[calc(50%-0.75rem)]">
-                    {{-- No hover promise on a closed card — it neither lifts
-                         nor brightens, the way Home demotes a blocked quick link. --}}
+                    {{-- The per-card <x-iron-scrollwork> is gone. Home settled the
+                         two ornaments into a hierarchy — scrollwork wraps a page's
+                         outer sheet, brass corners mark the cards inside it — and
+                         these cards were wearing the outer one each. Keeping both
+                         would put two flourishes in the same four corners. The card
+                         now carries its own flex basis, which the wrapper held. --}}
                     <x-dark-wall @class([
-                        'flex flex-col border p-6 transition duration-300',
+                        'relative flex basis-full flex-col border p-6 transition duration-300 md:basis-[calc(50%-0.75rem)]',
                         'border-yellow-700 hover:border-yellow-500' => ! $closed,
                         'border-stone-700' => (bool) $closed,
                     ])>
-                        <div class="text-center">
-                            <i class="fa-duotone fa-solid fa-hammer fa-2x {{ $closed ? 'text-stone-600' : 'text-yellow-500' }}"></i>
+                        {{-- Both colours written out literally: <x-brass-corners>
+                             reads its class through a prop, and Tailwind only
+                             builds classes it can see in the calling file. --}}
+                        <x-brass-corners class="h-3 w-3 {{ $closed ? 'text-stone-700' : 'text-yellow-700/70' }}" />
+
+                        <div class="relative text-center">
+                            <x-icon-roundel size="lg" icon="fa-hammer" :muted="(bool) $closed" />
                             <x-label @class(['text-2xl mt-3', 'text-stone-400' => (bool) $closed])>{{ $occupation->name }}</x-label>
                         </div>
 
-                        <p class="mt-3 font-sans text-sm text-stone-300">{{ $occupation->description }}</p>
+                        <p class="relative mt-3 font-sans text-sm text-stone-300">{{ $occupation->description }}</p>
 
-                        <div class="mt-3 space-y-1">
+                        <div class="relative mt-3 space-y-1">
                             <x-label class="text-sm text-stone-400">
                                 {{ __('Level') }} {{ $occupation->min_level }}&ndash;{{ $occupation->max_level ?? '∞' }}
                             </x-label>
@@ -106,7 +111,7 @@
                             </x-label>
                         </div>
 
-                        <div class="mt-auto pt-5">
+                        <div class="relative mt-auto pt-5">
                             @if ($closed === 'busy')
                                 <x-button class="w-full" disable>
                                     <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
@@ -136,7 +141,6 @@
                             @endif
                         </div>
                     </x-dark-wall>
-                    </x-iron-scrollwork>
                 @endforeach
             </div>
 
