@@ -1,6 +1,6 @@
 <div>
     <x-slot name="header">
-        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
+        <x-label as="h1" class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Train') }}
         </x-label>
     </x-slot>
@@ -16,7 +16,7 @@
     @endphp
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
             <x-flash />
 
@@ -91,7 +91,7 @@
                                 {{ __('Current') }}: <span class="text-white">{{ $this->character->{$key} }}</span>
                             </x-label>
                             <x-label class="text-sm text-stone-400">
-                                {{ __('Costs') }} <span class="text-yellow-700">{{ $cost }}</span> {{ __('energy') }}
+                                {{ __('Costs') }} <span class="text-yellow-600">{{ $cost }}</span> {{ __('energy') }}
                             </x-label>
                         </div>
 
