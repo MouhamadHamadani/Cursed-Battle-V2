@@ -1,13 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        {{-- Banner is width-capped rather than left to the 7xl header box: the
-             ribbon's swallowtail notches are a fixed share of the viewBox, so a
-             full-bleed run stretches them into invisibility. --}}
-        <x-tattered-banner class="mx-auto max-w-2xl">
-            <x-label as="h1" class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
-                {{ __('Home') }}
-            </x-label>
-        </x-tattered-banner>
+        {{-- Bare title, same as Work, Train, Battle, Market and Hospital. The
+             torn-ribbon backing is gone; <x-tattered-banner> itself stays for
+             the faction-select page, which still uses it. --}}
+        <x-label as="h1" class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
+            {{ __('Home') }}
+        </x-label>
     </x-slot>
 
     {{-- Everything below the header lives in the component, matching Work,
