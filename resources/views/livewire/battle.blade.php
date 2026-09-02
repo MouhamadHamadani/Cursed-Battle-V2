@@ -1,12 +1,12 @@
 <div>
     <x-slot name="header">
-        <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
+        <x-label as="h1" class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
             {{ __('Battle') }}
         </x-label>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
             <x-flash />
 
@@ -40,7 +40,7 @@
 
             {{-- The mark. One at a time, held on the character row. --}}
             <div>
-                <x-label class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
+                <x-label as="h2" class="font-uncialAntiqua text-3xl text-yellow-500 text-center mb-6">
                     <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Thy Mark') }}
                 </x-label>
 
@@ -205,7 +205,7 @@
                                 {{ __(':actor lands a blow for', ['actor' => $actor]) }}
                                 <span class="text-red-500">{{ $event['damage'] }}</span>.
                             @endif
-                            <span class="text-stone-500">
+                            <span class="text-stone-400">
                                 ({{ $target }} {{ __('at') }} {{ $event['target_hp'] }} {{ __('health') }})
                             </span>
                         </p>
