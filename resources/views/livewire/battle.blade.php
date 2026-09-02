@@ -69,33 +69,36 @@
                 </x-dark-wall>
             @endif
 
-            {{-- The challenger --}}
-            <x-dark-leather class="border border-yellow-700 p-6">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-                    <div>
-                        <x-label class="text-yellow-500">{{ __('Name') }}</x-label>
-                        <x-label class="text-2xl">{{ $this->character->user->name }}</x-label>
-                    </div>
-                    <div>
-                        <x-label class="text-yellow-500">{{ __('Level') }}</x-label>
-                        <x-label class="text-2xl">{{ $this->character->level }}</x-label>
-                    </div>
-                    <div>
-                        <x-label class="text-red-500">
-                            <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
-                        </x-label>
-                        <x-label class="text-2xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
-                    </div>
-                    <div>
-                        <x-label class="text-yellow-500">
-                            <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
-                        </x-label>
-                        <x-label class="text-2xl">{{ $this->character->gold }}</x-label>
-                    </div>
-                </div>
-            </x-dark-leather>
+            {{-- The challenger. Home's stat-cell recipe: dark-wall cell, brass
+                 corners, gold roundel, yellow-600 caption, the figure.
 
-            <x-divider />
+                 Level takes fa-shield-halved to match the status strip directly
+                 above, which is where a player already reads it. That glyph is
+                 Defense in Home's stat grid, but Defense does not appear on this
+                 page, so the two never sit side by side. --}}
+            @php
+                $challenger = [
+                    ['label' => __('Name'), 'icon' => 'fa-user', 'value' => $this->character->user->name],
+                    ['label' => __('Level'), 'icon' => 'fa-shield-halved', 'value' => $this->character->level],
+                    ['label' => __('Health'), 'icon' => 'fa-heart', 'value' => $this->character->health.' / '.$this->character->max_health],
+                    ['label' => __('Gold'), 'icon' => 'fa-coins', 'value' => $this->character->gold],
+                ];
+            @endphp
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                @foreach ($challenger as $cell)
+                    <x-dark-wall class="relative border border-yellow-700 p-4">
+                        <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                        <div class="relative flex flex-col items-center text-center">
+                            <x-icon-roundel :icon="$cell['icon']" />
+                            <x-label class="mt-2 text-xs uppercase tracking-widest text-yellow-600">{{ $cell['label'] }}</x-label>
+                            <x-label class="text-2xl">{{ $cell['value'] }}</x-label>
+                        </div>
+                    </x-dark-wall>
+                @endforeach
+            </div>
+
+            <x-gem-divider class="mx-auto max-w-2xl" />
 
             {{-- The mark. One at a time, held on the character row. --}}
             <div>
@@ -112,14 +115,24 @@
                              still compiles, which silently unbalances the @if. --}}
                         @php $tooPoorToReroll = $this->character->gold < $this->searchCost; @endphp
 
+                        {{-- A mark you cannot swing at stops promising the red
+                             hover, the way Home demotes a blocked quick link.
+                             The card keeps its full detail either way — knowing
+                             who is waiting is the point of the reveal. --}}
                         <x-dark-wall wire:key="opponent-{{ $this->opponent->id }}"
-                                     class="flex flex-col basis-full sm:basis-2/3 lg:basis-1/2 border border-yellow-700 p-6 hover:border-red-500 transition duration-300">
-                            <div class="text-center">
-                                <i class="fa-duotone fa-solid fa-helmet-battle fa-4x text-yellow-500"></i>
-                                <x-label class="text-2xl mt-3">{{ $this->opponent->user->name ?? __('Unknown') }}</x-label>
+                                     @class([
+                                         'relative flex flex-col basis-full sm:basis-2/3 lg:basis-1/2 border p-6 transition duration-300',
+                                         'border-yellow-700 hover:border-red-500' => ! $cannotFight,
+                                         'border-stone-700' => (bool) $cannotFight,
+                                     ])>
+                            <x-brass-corners class="h-3 w-3 {{ $cannotFight ? 'text-stone-700' : 'text-yellow-700/70' }}" />
+
+                            <div class="relative text-center">
+                                <x-icon-roundel size="lg" icon="fa-helmet-battle" :muted="(bool) $cannotFight" />
+                                <x-label @class(['text-2xl mt-3', 'text-stone-400' => (bool) $cannotFight])>{{ $this->opponent->user->name ?? __('Unknown') }}</x-label>
                             </div>
 
-                            <div class="mt-4 grid grid-cols-2 gap-4 text-center">
+                            <div class="relative mt-4 grid grid-cols-2 gap-4 text-center">
                                 <div>
                                     <x-label class="text-sm text-stone-400">{{ __('Level') }}</x-label>
                                     <x-label class="text-xl">{{ $this->opponent->level }}</x-label>
@@ -132,7 +145,7 @@
                                 </div>
                             </div>
 
-                            <div class="mt-auto pt-6 flex flex-col sm:flex-row gap-3">
+                            <div class="relative mt-auto pt-6 flex flex-col sm:flex-row gap-3">
                                 @if ($cannotFight === 'busy')
                                     <x-button class="flex-1" disable>
                                         <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
@@ -172,14 +185,19 @@
                             </div>
                         </x-dark-wall>
                     @else
-                        <x-dark-wall class="basis-full sm:basis-2/3 lg:basis-1/2 border border-yellow-700 p-8 text-center">
-                            <i class="fa-duotone fa-solid fa-magnifying-glass fa-4x text-yellow-500"></i>
-                            <x-label class="block text-2xl mt-4">{{ __('No mark before thee') }}</x-label>
-                            <p class="mt-2 font-sans text-xs text-stone-400">
+                        <x-dark-wall class="relative basis-full sm:basis-2/3 lg:basis-1/2 border border-yellow-700 p-8 text-center">
+                            <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                            <div class="relative">
+                                <x-icon-roundel size="lg" icon="fa-magnifying-glass" :muted="(bool) $cannotSearch" />
+                            </div>
+                            <x-label class="relative block text-2xl mt-4">{{ __('No mark before thee') }}</x-label>
+                            {{-- stone-400 is 6.32:1 on dark_wall, so the fee note
+                                 clears the body-text bar at this size. --}}
+                            <p class="relative mt-2 font-sans text-xs text-stone-400">
                                 {{ __('The first search costs nothing. Turning thy nose up at what it finds does.') }}
                             </p>
 
-                            <div class="mt-6">
+                            <div class="relative mt-6">
                                 @if ($cannotSearch === 'busy')
                                     <x-button disable>
                                         <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
