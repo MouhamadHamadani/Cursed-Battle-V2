@@ -26,7 +26,7 @@
         // Green up, red down, dim for a stat the item does not touch.
         $deltaColour = fn ($value) => $value > 0
             ? 'text-green-500'
-            : ($value < 0 ? 'text-red-500' : 'text-stone-500');
+            : ($value < 0 ? 'text-red-500' : 'text-stone-400');
 
         // The card's single headline stat: the largest-magnitude non-zero
         // delta. $deltasOf is already in priority order (STR > DEF > SPD > DEX)

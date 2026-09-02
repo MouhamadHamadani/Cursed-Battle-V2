@@ -50,7 +50,7 @@
                 <x-dark-wall class="border border-red-900 p-6 text-center">
                     <i class="fa-duotone fa-solid fa-bed fa-2x text-red-500"></i>
                     <x-chain-divider class="mt-4" />
-                    <x-label class="text-xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
+                    <x-label class="text-2xl text-red-500 mt-3">{{ $spent[array_rand($spent)] }}</x-label>
                 </x-dark-wall>
             @endif
 
