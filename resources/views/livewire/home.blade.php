@@ -180,33 +180,40 @@
             </x-dark-wall>
         </div>
 
-        {{-- Standing and stats. --}}
-        {{-- Five cells, not six: Level is the medallion above now. The old
-             lg:grid-cols-6 would leave a hole, so the row gets its own column
-             plan — 2 up to sm, 3 through lg, 5 across on desktop. --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
-            <div>
-                <x-label class="text-yellow-500">
-                    <i class="fa-duotone fa-solid fa-coins me-2"></i>{{ __('Gold') }}
-                </x-label>
-                <x-label class="text-3xl">{{ $character->gold }}</x-label>
-            </div>
-            <div>
-                <x-label class="text-yellow-500">{{ __('Strength') }}</x-label>
-                <x-label class="text-3xl">{{ $character->strength }}</x-label>
-            </div>
-            <div>
-                <x-label class="text-yellow-500">{{ __('Defense') }}</x-label>
-                <x-label class="text-3xl">{{ $character->defense }}</x-label>
-            </div>
-            <div>
-                <x-label class="text-yellow-500">{{ __('Speed') }}</x-label>
-                <x-label class="text-3xl">{{ $character->speed }}</x-label>
-            </div>
-            <div>
-                <x-label class="text-yellow-500">{{ __('Dexterity') }}</x-label>
-                <x-label class="text-3xl">{{ $character->dexterity }}</x-label>
-            </div>
+        {{-- Standing and stats.
+
+             Icons are new here — the row had none. Two of the five diverge from
+             Train's table on purpose:
+               Speed  -> fa-wind, not Train's fa-bolt, because fa-bolt is Energy
+                         in the vitals band directly above and in the status
+                         strip above that. Train should follow in its own pass.
+               Strength -> fa-hand-fist, matching Train, rather than fa-sword,
+                         which would put a second sword glyph a few hundred
+                         pixels from the Battle card's fa-swords.
+             Dexterity keeps Train's fa-feather: ADR-003 gives dodge to
+             dexterity and hit chance to speed, so an accuracy glyph here would
+             point at the wrong stat. --}}
+        @php
+            $stats = [
+                ['label' => __('Gold'), 'icon' => 'fa-coins', 'value' => $character->gold],
+                ['label' => __('Strength'), 'icon' => 'fa-hand-fist', 'value' => $character->strength],
+                ['label' => __('Defense'), 'icon' => 'fa-shield-halved', 'value' => $character->defense],
+                ['label' => __('Speed'), 'icon' => 'fa-wind', 'value' => $character->speed],
+                ['label' => __('Dexterity'), 'icon' => 'fa-feather', 'value' => $character->dexterity],
+            ];
+        @endphp
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+            @foreach ($stats as $stat)
+                <x-dark-wall class="relative border border-yellow-700/60 p-4">
+                    <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                    <div class="relative flex flex-col items-center text-center">
+                        <x-icon-roundel :icon="$stat['icon']" />
+                        <x-label class="mt-2 text-xs uppercase tracking-widest text-yellow-600">{{ $stat['label'] }}</x-label>
+                        <x-label class="text-3xl">{{ $stat['value'] }}</x-label>
+                    </div>
+                </x-dark-wall>
+            @endforeach
         </div>
 
         </div>
@@ -250,20 +257,24 @@
                      was suppressed on. The ring is outside the blocked branches
                      so focus stays visible on a demoted card too. --}}
                 <a href="{{ route($link['route']) }}" wire:navigate
-                   class="group focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
+                   class="group block focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
                     <x-dark-wall @class([
-                        'h-full border p-6 text-center transition duration-300',
-                        'border-yellow-700 group-hover:border-yellow-500 group-focus-visible:border-yellow-500' => ! $link['blocked'],
-                        // No hover promise on a blocked card — the border stays put.
+                        'relative h-full border p-6 text-center transition duration-300',
+                        'border-yellow-700 group-hover:-translate-y-1 group-hover:border-yellow-500 group-focus-visible:border-yellow-500' => ! $link['blocked'],
+                        // No hover promise on a blocked card — it neither lifts nor brightens.
                         'border-stone-700' => (bool) $link['blocked'],
                     ])>
-                        <i class="fa-duotone fa-solid {{ $link['icon'] }} fa-3x {{ $link['blocked'] ? 'text-stone-600' : 'text-yellow-500' }}"></i>
-                        <x-label @class(['text-2xl mt-3', 'text-stone-400' => (bool) $link['blocked']])>{{ $link['label'] }}</x-label>
+                        {{-- Both colours written out literally: <x-brass-corners>
+                             reads its class through a prop, and Tailwind only
+                             builds classes it can see in the calling file. --}}
+                        <x-brass-corners class="h-3 w-3 {{ $link['blocked'] ? 'text-stone-700' : 'text-yellow-700/70' }}" />
+                        <x-icon-roundel class="relative" size="lg" :icon="$link['icon']" :muted="(bool) $link['blocked']" />
+                        <x-label @class(['relative text-2xl mt-3', 'text-stone-400' => (bool) $link['blocked']])>{{ $link['label'] }}</x-label>
 
                         {{-- The evergreen blurb gives way to the reason: at two
                              columns wide there is room for one line, and which
                              door is shut right now beats what is behind it. --}}
-                        <p class="mt-1 font-sans text-xs text-stone-400">
+                        <p class="relative mt-1 font-sans text-xs text-stone-400">
                             @if ($link['blocked'] === 'busy')
                                 <i class="fa-duotone fa-solid fa-hourglass-half me-1"></i>{{ __('Busy') }}
                             @elseif ($link['blocked'] === 'hospital')
