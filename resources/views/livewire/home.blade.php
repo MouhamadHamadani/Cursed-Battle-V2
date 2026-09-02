@@ -56,7 +56,7 @@
                     </x-label>
                     <x-label>{{ $character->xp }} / {{ $xpThreshold }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700">
+                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
                     <div class="h-full bg-yellow-500" style="width: {{ $pct($character->xp, $xpThreshold) }}%"></div>
                 </div>
             </x-dark-wall>
@@ -68,19 +68,24 @@
                     </x-label>
                     <x-label>{{ $character->health }} / {{ $character->max_health }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700">
+                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
                     <div class="h-full bg-red-500" style="width: {{ $pct($character->health, $character->max_health) }}%"></div>
                 </div>
             </x-dark-wall>
 
             <x-dark-wall class="border border-yellow-700 p-4">
                 <div class="flex items-center justify-between mb-2">
-                    <x-label class="text-yellow-700">
+                    {{-- yellow-600, not the yellow-700 used for the bar fill
+                         and the status-bar bolt: measured against the dark_wall
+                         texture, 700 is 3.23:1 — fine for a border or a fill,
+                         under the 4.5:1 body-text bar. 600 is 5.42:1 and is
+                         already in the palette (scrollwork, chain, corners). --}}
+                    <x-label class="text-yellow-600">
                         <i class="fa-duotone fa-solid fa-bolt me-2"></i>{{ __('Energy') }}
                     </x-label>
                     <x-label>{{ $character->energy }} / {{ $character->max_energy }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700">
+                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
                     <div class="h-full bg-yellow-700" style="width: {{ $pct($character->energy, $character->max_energy) }}%"></div>
                 </div>
                 <p class="mt-2 font-sans text-xs text-stone-400">{{ __('Health and energy return on the world tick.') }}</p>
@@ -88,8 +93,9 @@
         </div>
 
         {{-- Faction. Click through for the banner's own page. --}}
-        <button type="button" wire:click="$set('showFaction', true)" class="block w-full mb-8">
-            <x-dark-wall class="border border-yellow-700 p-4 flex items-center justify-center gap-3 hover:border-yellow-500 transition duration-300">
+        <button type="button" wire:click="$set('showFaction', true)"
+                class="group block w-full mb-8 focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
+            <x-dark-wall class="border border-yellow-700 p-4 flex items-center justify-center gap-3 transition duration-300 group-hover:border-yellow-500 group-focus-visible:border-yellow-500">
                 <i class="fa-duotone fa-solid fa-flag-swallowtail text-yellow-500"></i>
                 <x-label class="text-yellow-500">{{ __('Faction') }}</x-label>
                 <x-label class="text-xl">{{ \App\Models\Character::factionLabel($character->faction) }}</x-label>
@@ -159,14 +165,17 @@
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach ($links as $link)
-                {{-- `group` + focus-visible on the panel, copied from the town-map
-                     markers: the hover affordance used to sit on the inner panel
-                     with nothing on the anchor, so a keyboard user got no
-                     feedback at all. The ring is outside the blocked branches so
-                     focus stays visible on a demoted card too. --}}
-                <a href="{{ route($link['route']) }}" wire:navigate class="group focus:outline-none">
+                {{-- The hover affordance used to sit on the inner panel with
+                     nothing at all on the anchor, so a keyboard user got no
+                     feedback. Border highlight via `group`, as the town-map
+                     markers do it; the ring sits on the anchor itself, as the
+                     Town button does it, which is also the element the outline
+                     was suppressed on. The ring is outside the blocked branches
+                     so focus stays visible on a demoted card too. --}}
+                <a href="{{ route($link['route']) }}" wire:navigate
+                   class="group focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
                     <x-dark-wall @class([
-                        'h-full border p-6 text-center transition duration-300 group-focus-visible:ring-1 group-focus-visible:ring-yellow-500',
+                        'h-full border p-6 text-center transition duration-300',
                         'border-yellow-700 group-hover:border-yellow-500 group-focus-visible:border-yellow-500' => ! $link['blocked'],
                         // No hover promise on a blocked card — the border stays put.
                         'border-stone-700' => (bool) $link['blocked'],
