@@ -12,6 +12,11 @@
             $xpThreshold = app(\App\Services\LevelingService::class)->threshold($character->level);
             $pct = fn (int $value, int $max) => $max > 0 ? min(100, max(0, round($value / $max * 100))) : 0;
 
+            // How many of the ten rivets are lit. ceil, not round, so any
+            // non-zero value lights at least one — a bar reading fully empty
+            // while the figure beside it says 4/100 would be a lie.
+            $lit = fn (int $value, int $max) => (int) ceil($pct($value, $max) / 10);
+
             // Read once here, used by the banners below and by the quick-link
             // cards at the foot of the page. Both are the model's own time
             // comparisons — this view decides nothing, it only renders what the
@@ -82,32 +87,54 @@
 
         {{-- Vitals: the three bars a fighter reads first. --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <x-dark-wall class="border border-yellow-700 p-4">
-                <div class="flex items-center justify-between mb-2">
+            <x-dark-wall class="relative border border-yellow-700 p-4">
+                {{-- Same corner flourish as the sheet's outer scrollwork and the
+                     town-map plaques, scaled to a single card. Rendered first with
+                     the content stacked over it, as <x-brass-corners> requires. --}}
+                <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                <div class="relative flex items-center justify-between mb-2">
                     <x-label class="text-yellow-500">
                         <i class="fa-duotone fa-solid fa-star me-2"></i>{{ __('XP') }}
                     </x-label>
                     <x-label>{{ $character->xp }} / {{ $xpThreshold }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
-                    <div class="h-full bg-yellow-500" style="width: {{ $pct($character->xp, $xpThreshold) }}%"></div>
+                {{-- Riveted fill: ten segments with a hairline gap, so the bar
+                     reads as banded metal rather than a painted rect. Still
+                     aria-hidden — the figure above it is the accessible source. --}}
+                <div class="relative flex h-4 gap-0.5 border border-yellow-700 bg-black p-px" aria-hidden="true">
+                    @for ($i = 0; $i < 10; $i++)
+                        <span @class(['flex-1', 'bg-yellow-500' => $i < $lit($character->xp, $xpThreshold)])></span>
+                    @endfor
                 </div>
             </x-dark-wall>
 
-            <x-dark-wall class="border border-yellow-700 p-4">
-                <div class="flex items-center justify-between mb-2">
+            <x-dark-wall class="relative border border-yellow-700 p-4">
+                {{-- Same corner flourish as the sheet's outer scrollwork and the
+                     town-map plaques, scaled to a single card. Rendered first with
+                     the content stacked over it, as <x-brass-corners> requires. --}}
+                <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                <div class="relative flex items-center justify-between mb-2">
                     <x-label class="text-red-500">
                         <i class="fa-duotone fa-solid fa-heart me-2"></i>{{ __('Health') }}
                     </x-label>
                     <x-label>{{ $character->health }} / {{ $character->max_health }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
-                    <div class="h-full bg-red-500" style="width: {{ $pct($character->health, $character->max_health) }}%"></div>
+                {{-- Riveted fill: ten segments with a hairline gap, so the bar
+                     reads as banded metal rather than a painted rect. Still
+                     aria-hidden — the figure above it is the accessible source. --}}
+                <div class="relative flex h-4 gap-0.5 border border-yellow-700 bg-black p-px" aria-hidden="true">
+                    @for ($i = 0; $i < 10; $i++)
+                        <span @class(['flex-1', 'bg-red-500' => $i < $lit($character->health, $character->max_health)])></span>
+                    @endfor
                 </div>
             </x-dark-wall>
 
-            <x-dark-wall class="border border-yellow-700 p-4">
-                <div class="flex items-center justify-between mb-2">
+            <x-dark-wall class="relative border border-yellow-700 p-4">
+                {{-- Same corner flourish as the sheet's outer scrollwork and the
+                     town-map plaques, scaled to a single card. Rendered first with
+                     the content stacked over it, as <x-brass-corners> requires. --}}
+                <x-brass-corners class="h-3 w-3 text-yellow-700/70" />
+                <div class="relative flex items-center justify-between mb-2">
                     {{-- yellow-600, not the yellow-700 used for the bar fill
                          and the status-bar bolt: measured against the dark_wall
                          texture, 700 is 3.23:1 — fine for a border or a fill,
@@ -118,8 +145,13 @@
                     </x-label>
                     <x-label>{{ $character->energy }} / {{ $character->max_energy }}</x-label>
                 </div>
-                <div class="h-3 bg-black border border-yellow-700" aria-hidden="true">
-                    <div class="h-full bg-yellow-700" style="width: {{ $pct($character->energy, $character->max_energy) }}%"></div>
+                {{-- Riveted fill: ten segments with a hairline gap, so the bar
+                     reads as banded metal rather than a painted rect. Still
+                     aria-hidden — the figure above it is the accessible source. --}}
+                <div class="relative flex h-4 gap-0.5 border border-yellow-700 bg-black p-px" aria-hidden="true">
+                    @for ($i = 0; $i < 10; $i++)
+                        <span @class(['flex-1', 'bg-yellow-700' => $i < $lit($character->energy, $character->max_energy)])></span>
+                    @endfor
                 </div>
                 <p class="mt-2 font-sans text-xs text-stone-400">{{ __('Health and energy return on the world tick.') }}</p>
             </x-dark-wall>
