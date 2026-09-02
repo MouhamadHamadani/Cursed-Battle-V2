@@ -10,31 +10,11 @@
         </x-tattered-banner>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-            <x-iron-scrollwork>
-                <x-dark-leather class="border border-yellow-700 p-6">
-                    <livewire:home />
-                </x-dark-leather>
-            </x-iron-scrollwork>
-
-            {{-- Quick links to the four places a character can spend a turn. --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                @foreach ([
-                    ['route' => 'work', 'label' => __('Work'), 'icon' => 'fa-hammer', 'blurb' => __('Trade energy for gold.')],
-                    ['route' => 'train', 'label' => __('Train'), 'icon' => 'fa-dumbbell', 'blurb' => __('Sharpen thy stats.')],
-                    ['route' => 'market', 'label' => __('Market'), 'icon' => 'fa-treasure-chest', 'blurb' => __('Arm and armour thyself.')],
-                    ['route' => 'battle', 'label' => __('Battle'), 'icon' => 'fa-swords', 'blurb' => __('Test thy steel on another.')],
-                ] as $link)
-                    <a href="{{ route($link['route']) }}" wire:navigate>
-                        <x-dark-wall class="h-full border border-yellow-700 p-6 text-center hover:border-yellow-500 transition duration-300">
-                            <i class="fa-duotone fa-solid {{ $link['icon'] }} fa-3x text-yellow-500"></i>
-                            <x-label class="text-2xl mt-3">{{ $link['label'] }}</x-label>
-                            <p class="mt-1 font-sans text-xs text-stone-400">{{ $link['blurb'] }}</p>
-                        </x-dark-wall>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    </div>
+    {{-- Everything below the header lives in the component, matching Work,
+         Train, Battle, Market and Hospital. The quick-link cards in particular
+         have to be inside it: they read the character's busy/hospitalized state
+         to show which of the four are currently closed, and only a Livewire
+         component re-renders on the 'character-updated' event, so a session
+         finishing unlocks them in place instead of on the next page load. --}}
+    <livewire:home />
 </x-app-layout>
