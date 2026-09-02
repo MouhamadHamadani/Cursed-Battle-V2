@@ -4,7 +4,7 @@
              ribbon's swallowtail notches are a fixed share of the viewBox, so a
              full-bleed run stretches them into invisibility. --}}
         <x-tattered-banner class="mx-auto max-w-2xl">
-            <x-label class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
+            <x-label as="h1" class="font-uncialAntiqua text-4xl sm:text-6xl text-yellow-500 text-shadow-lg shadow-yellow-600">
                 {{ __('Home') }}
             </x-label>
         </x-tattered-banner>
