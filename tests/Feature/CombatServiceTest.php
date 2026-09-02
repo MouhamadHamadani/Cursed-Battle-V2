@@ -284,7 +284,7 @@ test('effectiveStats reflects base stats plus only the equipped items deltas', f
     ]);
     $equippedItem = Item::create([
         'name' => 'Cursed Blade',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 10,
         'defense_delta' => -2,
         'speed_delta' => 3,
@@ -299,7 +299,7 @@ test('effectiveStats reflects base stats plus only the equipped items deltas', f
     ]);
     $unequippedItem = Item::create([
         'name' => 'Spare Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 999,
         'min_level' => 1,
         'cost' => 10,

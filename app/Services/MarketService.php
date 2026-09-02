@@ -68,8 +68,11 @@ class MarketService
     }
 
     /**
-     * Equip an owned item. Multi-write (unequip current same-type item(s) +
-     * equip this one) so it runs inside a transaction.
+     * Equip an owned item. Multi-write (unequip the current occupant of this
+     * item's slot + equip this one) so it runs inside a transaction.
+     *
+     * Keyed on `slot` since ADR-003, which is the whole cost of going from
+     * two slots to four — the one-per-slot rule generalises for free.
      */
     public function equip(Character $character, Item $item): void
     {
@@ -82,9 +85,9 @@ class MarketService
                 throw new GameActionException('You do not own this item.');
             }
 
-            // one equipped per type: unequip current same-type item(s) first
+            // one equipped per slot: unequip the current occupant first
             CharacterItem::where('character_id', $character->id)
-                ->whereHas('item', fn ($q) => $q->where('type', $item->type))
+                ->whereHas('item', fn ($q) => $q->where('slot', $item->slot))
                 ->update(['equipped' => false]);
 
             $owned->update(['equipped' => true]);

@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\User;
 use App\Services\GameActionException;
 use App\Services\MarketService;
+use Database\Factories\ItemFactory;
 use Livewire\Livewire;
 
 test('buying an item with enough gold and level creates an owned row and decreases gold', function () {
@@ -17,7 +18,7 @@ test('buying an item with enough gold and level creates an owned row and decreas
     ]);
     $item = Item::create([
         'name' => 'Rusty Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 2,
         'min_level' => 1,
         'cost' => 50,
@@ -42,7 +43,7 @@ test('buying with insufficient gold is rejected and nothing changes', function (
     ]);
     $item = Item::create([
         'name' => 'Iron Sword',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 5,
         'min_level' => 1,
         'cost' => 200,
@@ -64,7 +65,7 @@ test('buying an item below the required level is rejected and nothing changes', 
     ]);
     $item = Item::create([
         'name' => 'Cursed Blade',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 9,
         'speed_delta' => 2,
         'dexterity_delta' => 2,
@@ -88,7 +89,7 @@ test('buying the same item twice is rejected on the second attempt, leaving exac
     ]);
     $item = Item::create([
         'name' => 'Rusty Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 2,
         'min_level' => 1,
         'cost' => 50,
@@ -104,7 +105,7 @@ test('buying the same item twice is rejected on the second attempt, leaving exac
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->count())->toEqual(1);
 });
 
-test('equipping an item sets it equipped, swaps out a same-type item, and leaves a different-type item untouched', function () {
+test('equipping an item sets it equipped, swaps out the same-slot occupant, and leaves another slot untouched', function () {
     $character = Character::create([
         'user_id' => User::factory()->create()->id,
         'level' => 10,
@@ -112,21 +113,21 @@ test('equipping an item sets it equipped, swaps out a same-type item, and leaves
     ]);
     $dagger = Item::create([
         'name' => 'Rusty Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 2,
         'min_level' => 1,
         'cost' => 50,
     ]);
     $sword = Item::create([
         'name' => 'Iron Sword',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 5,
         'min_level' => 1,
         'cost' => 200,
     ]);
     $armor = Item::create([
         'name' => 'Leather Vest',
-        'type' => 'armor',
+        'slot' => 'body',
         'defense_delta' => 2,
         'speed_delta' => 1,
         'dexterity_delta' => 1,
@@ -162,7 +163,7 @@ test('equipping an item the character does not own is rejected', function () {
     ]);
     $item = Item::create([
         'name' => 'Iron Sword',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 5,
         'min_level' => 1,
         'cost' => 200,
@@ -180,7 +181,7 @@ test('unequipping an owned item sets equipped to false', function () {
     ]);
     $item = Item::create([
         'name' => 'Rusty Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 2,
         'min_level' => 1,
         'cost' => 50,
@@ -196,7 +197,7 @@ test('unequipping an owned item sets equipped to false', function () {
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->first()->equipped)->toBeFalse();
 });
 
-// --- Gap-fill: exact-gold boundary, same-type equip swap in isolation ---
+// --- Gap-fill: exact-gold boundary, same-slot equip swap in isolation ---
 
 test('buying an item when gold exactly equals the cost succeeds and leaves zero gold', function () {
     $character = Character::create([
@@ -206,7 +207,7 @@ test('buying an item when gold exactly equals the cost succeeds and leaves zero 
     ]);
     $item = Item::create([
         'name' => 'Bone Charm',
-        'type' => 'armor',
+        'slot' => 'body',
         'defense_delta' => 1,
         'min_level' => 1,
         'cost' => 50,
@@ -222,7 +223,7 @@ test('buying an item when gold exactly equals the cost succeeds and leaves zero 
     expect(CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->exists())->toBeTrue();
 });
 
-test('equipping a second owned item of the same type unequips the first, even with no other items owned', function () {
+test('equipping a second owned item in the same slot unequips the first, even with no other items owned', function () {
     $character = Character::create([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
@@ -230,14 +231,14 @@ test('equipping a second owned item of the same type unequips the first, even wi
     ]);
     $dagger = Item::create([
         'name' => 'Rusty Dagger',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 2,
         'min_level' => 1,
         'cost' => 50,
     ]);
     $sword = Item::create([
         'name' => 'Iron Sword',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'strength_delta' => 5,
         'min_level' => 1,
         'cost' => 200,
@@ -280,7 +281,7 @@ function busyTrader(): Character
 test('a busy character cannot buy, and the refusal names what they are doing', function () {
     $character = busyTrader();
     $item = Item::create([
-        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'name' => 'Rusty Dagger', 'slot' => 'weapon', 'strength_delta' => 2,
         'min_level' => 1, 'cost' => 50,
     ]);
 
@@ -294,7 +295,7 @@ test('a busy character cannot buy, and the refusal names what they are doing', f
 test('a busy character cannot equip or unequip', function () {
     $character = busyTrader();
     $item = Item::create([
-        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'name' => 'Rusty Dagger', 'slot' => 'weapon', 'strength_delta' => 2,
         'min_level' => 1, 'cost' => 50,
     ]);
     $owned = CharacterItem::create([
@@ -312,7 +313,7 @@ test('a busy character cannot equip or unequip', function () {
 test('the market unblocks once the shift resolves, with no explicit resolve call', function () {
     $character = busyTrader();
     $item = Item::create([
-        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'name' => 'Rusty Dagger', 'slot' => 'weapon', 'strength_delta' => 2,
         'min_level' => 1, 'cost' => 50,
     ]);
 
@@ -374,4 +375,162 @@ test('the market lists universal items plus the character own faction, and nothi
 
     expect($listed)->toContain($universal->id, $mine->id);
     expect($listed)->not->toContain($theirs->id);
+});
+
+// ---------------------------------------------------------------------------
+// ADR-003 §4: four slots. equip() is keyed on `slot`, so the one-per-slot rule
+// generalises from 2 slots to 4 without any other logic change.
+// ---------------------------------------------------------------------------
+
+function slotted(string $slot, string $name): Item
+{
+    return Item::create([
+        'name' => $name,
+        'slot' => $slot,
+        'defense_delta' => 1,
+        'min_level' => 1,
+        'cost' => 10,
+    ]);
+}
+
+test('all four slots equip independently — filling one never unequips another', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 1000,
+    ]);
+
+    $service = new MarketService;
+    $items = [];
+
+    foreach (Item::SLOTS as $slot) {
+        $items[$slot] = slotted($slot, "Test {$slot}");
+        $service->buy($character, $items[$slot]);
+        $service->equip($character, $items[$slot]);
+    }
+
+    // Every slot is still equipped after all four have been filled.
+    foreach (Item::SLOTS as $slot) {
+        expect(CharacterItem::where('character_id', $character->id)
+            ->where('item_id', $items[$slot]->id)->first()->equipped)
+            ->toBeTrue("slot {$slot} should still be equipped");
+    }
+
+    expect(CharacterItem::where('character_id', $character->id)->where('equipped', true)->count())
+        ->toBe(count(Item::SLOTS));
+});
+
+test('equipping a second item in a non-weapon slot unequips only that slot occupant', function () {
+    $character = Character::create([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 1000,
+    ]);
+
+    $sword = slotted('weapon', 'Iron Sword');
+    $buckler = slotted('shield', 'Oaken Buckler');
+    $tower = slotted('shield', 'Tower Shield');
+
+    $service = new MarketService;
+    foreach ([$sword, $buckler, $tower] as $item) {
+        $service->buy($character, $item);
+    }
+
+    $service->equip($character, $sword);
+    $service->equip($character, $buckler);
+    $service->equip($character, $tower);
+
+    $equipped = fn (Item $i) => CharacterItem::where('character_id', $character->id)
+        ->where('item_id', $i->id)->first()->equipped;
+
+    expect($equipped($tower))->toBeTrue();
+    expect($equipped($buckler))->toBeFalse(); // displaced by the other shield
+    expect($equipped($sword))->toBeTrue();    // a different slot — untouched
+});
+
+test('the factory honours the ADR-003 delta budgets, including the shield mobility cost', function () {
+    // Weapons keep the full range; the three defensive slots are scaled to a
+    // third so 3 slots do not triple the gear ceiling.
+    foreach (Item::factory()->count(30)->slot('weapon')->create() as $weapon) {
+        expect($weapon->strength_delta)->toBeGreaterThanOrEqual(0)
+            ->and($weapon->strength_delta)->toBeLessThanOrEqual(ItemFactory::WEAPON_DELTA_MAX);
+    }
+
+    foreach (['head', 'body'] as $slot) {
+        foreach (Item::factory()->count(20)->slot($slot)->create() as $armor) {
+            expect($armor->defense_delta)->toBeLessThanOrEqual(ItemFactory::ARMOR_DELTA_MAX);
+            expect($armor->speed_delta)->toBeGreaterThanOrEqual(0); // only shields go negative
+        }
+    }
+
+    foreach (Item::factory()->count(30)->slot('shield')->create() as $shield) {
+        expect($shield->defense_delta)->toBeLessThanOrEqual(ItemFactory::ARMOR_DELTA_MAX);
+        // Bulkier: harder to swing fast AND harder to dodge behind — both, not either.
+        expect($shield->speed_delta)->toBeGreaterThanOrEqual(ItemFactory::SHIELD_PENALTY_MIN)
+            ->and($shield->speed_delta)->toBeLessThanOrEqual(ItemFactory::SHIELD_PENALTY_MAX);
+        expect($shield->dexterity_delta)->toBeGreaterThanOrEqual(ItemFactory::SHIELD_PENALTY_MIN)
+            ->and($shield->dexterity_delta)->toBeLessThanOrEqual(ItemFactory::SHIELD_PENALTY_MAX);
+    }
+
+    // The whole point of the rebalance: 3 defensive slots at max ~= 1 old slot at max.
+    expect(3 * ItemFactory::ARMOR_DELTA_MAX)->toBeLessThanOrEqual(ItemFactory::WEAPON_DELTA_MAX);
+});
+
+// ---------------------------------------------------------------------------
+// The "more details" popup — an extra entry point, not a replacement for the
+// on-card Buy button.
+// ---------------------------------------------------------------------------
+
+test('the details popup opens with the full item breakdown and the action that applies', function () {
+    $user = User::factory()->create();
+    $character = Character::create(['user_id' => $user->id, 'level' => 5, 'gold' => 1000]);
+
+    $shield = Item::create([
+        'name' => 'Bone Shield',
+        'slot' => 'shield',
+        'description' => 'Cold to the touch, even at noon.',
+        'defense_delta' => 3,
+        'speed_delta' => -2,
+        'dexterity_delta' => -1,
+        'min_level' => 2,
+        'cost' => 150,
+    ]);
+
+    $this->actingAs($user);
+    $component = Livewire::test(Market::class);
+
+    // Closed until something is selected.
+    expect($component->get('showDetails'))->toBeFalse();
+
+    $component->call('selectItem', $shield->id);
+
+    expect($component->get('showDetails'))->toBeTrue();
+    expect($component->get('selectedItemId'))->toEqual($shield->id);
+
+    // Slot, description, all four deltas (zeroes included), and Buy while unowned.
+    $component->assertSee('shield')
+        ->assertSee($shield->description)
+        ->assertSee('STR')->assertSee('DEF')->assertSee('SPD')->assertSee('DEX')
+        ->assertSee('Buy');
+
+    // Buying from inside the popup flips the action to Equip, then to Unequip.
+    $component->call('buy', $shield->id)->assertSee('Equip');
+    $component->call('equip', $shield->id)->assertSee('Unequip');
+
+    expect(CharacterItem::where('character_id', $character->id)
+        ->where('item_id', $shield->id)->first()->equipped)->toBeTrue();
+});
+
+test('the details popup refuses an item the character faction cannot see', function () {
+    $user = User::factory()->create();
+    Character::create(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
+
+    $theirs = Item::factory()->create(['faction' => 'faction_2']);
+
+    $this->actingAs($user);
+    $component = Livewire::test(Market::class)->call('selectItem', $theirs->id);
+
+    // The listing scope is re-applied, so an out-of-faction id opens nothing.
+    expect($component->get('selectedItemId'))->toBeNull();
+    expect($component->get('showDetails'))->toBeFalse();
 });

@@ -73,7 +73,7 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
    - **While a shift or drill is running you are locked out of everything else** — no second session, no attacking, no market. Thou art at thy labours; come back when the work is done. A countdown shows in the status bar and on the Work/Train page.
    - Nothing needs collecting: the result lands on its own the next time a page paints. Walking away just means seeing it later.
    - Being *busy* does not protect you — others can still attack you mid-shift. Only the hospital blocks incoming attacks.
-4. **Market** — `/market` browse and buy weapons/armor, equip them. Gear carries stat bonuses. Costs gold and has level requirements.
+4. **Market** — `/market` browse and buy gear across four equipment slots — **weapon, shield, head, body** — and equip one item per slot. Click an item's art for the full details popup (all four stat deltas, flavour text, and the action that applies). Gear carries signed stat deltas that sum into your effective stats; a shield trades a little speed and dexterity for defense. Costs gold and has level requirements.
 5. **Battle** — `/battle` attack another character. Fight resolves instantly in up to 10 rounds. Win = steal 10% of their gold + XP, lose = hospitalized for 30 minutes.
 6. **Hospital** — `/hospital` view remaining cooldown. While hospitalized, you can't fight (both attacking and being attacked are blocked). Work and Train stay available, and a shift you were already on runs to completion normally.
 7. **Level up** — accumulate XP via Work trickle and combat wins. Level thresholds are `level × 100` XP. Leveling up heals you fully, restores energy, and raises your max HP/energy caps.
@@ -93,8 +93,10 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 | Train session | 5 min + 30s per level above 1 (5m at L1 → 29m30s at L50) |
 | Work session | 5 min + 60s per level above 1 (5m at L1 → 54m at L50) |
 | While busy | blocks Train, Work, Battle (as attacker) and Market — **not** being attacked |
+| Equipment slots | weapon / shield / head / body — one equipped item per slot, deltas **sum** |
+| Gear delta budget | weapons up to +10 per stat; shield/head/body up to +3, shields paying −1..−3 speed **and** dexterity |
 
-For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md). For the session pacing model (duration formula, lazy resolution, the full lock), see [.claude/adr/ADR-002-timed-sessions.md](.claude/adr/ADR-002-timed-sessions.md). For the four-stat model (why agility became speed + dexterity, the miss formula and its two tunables), see [.claude/adr/ADR-003-four-stat-split.md](.claude/adr/ADR-003-four-stat-split.md).
+For the full combat spec (damage formula, turn order, effective-stat aggregation, farming anti-cheat), see [.claude/adr/ADR-001-combat-hospital-leveling.md](.claude/adr/ADR-001-combat-hospital-leveling.md). For the session pacing model (duration formula, lazy resolution, the full lock), see [.claude/adr/ADR-002-timed-sessions.md](.claude/adr/ADR-002-timed-sessions.md). For the four-stat model and the four equipment slots (why agility became speed + dexterity, the miss formula, and the slot rebalance), see [.claude/adr/ADR-003-battle-stats-and-equipment-slots.md](.claude/adr/ADR-003-battle-stats-and-equipment-slots.md).
 
 ## Testing
 

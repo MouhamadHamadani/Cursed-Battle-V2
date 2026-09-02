@@ -12,10 +12,46 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Market extends Component
 {
+    /**
+     * The "more details" popup. The on-card Buy button stays the fast path;
+     * this is an additional entry point, not a replacement for it.
+     */
+    public bool $showDetails = false;
+
+    public ?int $selectedItemId = null;
+
     #[Computed]
     public function character()
     {
         return auth()->user()->character;
+    }
+
+    /**
+     * Open the details popup for an item. $id is untrusted client input, but
+     * this only ever reads a public catalogue row — and the listing scope is
+     * re-applied so a faction-locked item can't be inspected by outsiders.
+     */
+    public function selectItem(int $id): void
+    {
+        $this->selectedItemId = $this->items->firstWhere('id', $id)?->id;
+        $this->showDetails = $this->selectedItemId !== null;
+    }
+
+    #[Computed]
+    public function selectedItem(): ?Item
+    {
+        return $this->selectedItemId === null
+            ? null
+            : $this->items->firstWhere('id', $this->selectedItemId);
+    }
+
+    /** The owned row for the selected item, or null if it isn't owned yet. */
+    #[Computed]
+    public function selectedOwned()
+    {
+        return $this->selectedItemId === null
+            ? null
+            : $this->inventory->firstWhere('item_id', $this->selectedItemId);
     }
 
     #[Computed]
@@ -51,7 +87,7 @@ class Market extends Component
 
         try {
             app(MarketService::class)->buy($this->character, $item);
-            unset($this->character, $this->ownedItemIds, $this->inventory);
+            unset($this->character, $this->ownedItemIds, $this->inventory, $this->selectedOwned);
             $this->dispatch('character-updated');
             session()->flash('status', "Purchased {$item->name}.");
         } catch (GameActionException $e) {
@@ -69,7 +105,7 @@ class Market extends Component
 
         try {
             app(MarketService::class)->equip($this->character, $item);
-            unset($this->character, $this->inventory);
+            unset($this->character, $this->inventory, $this->selectedOwned);
             $this->dispatch('character-updated');
             session()->flash('status', "Equipped {$item->name}.");
         } catch (GameActionException $e) {
@@ -86,7 +122,7 @@ class Market extends Component
 
         try {
             app(MarketService::class)->unequip($this->character, $item);
-            unset($this->character, $this->inventory);
+            unset($this->character, $this->inventory, $this->selectedOwned);
             $this->dispatch('character-updated');
             session()->flash('status', "Unequipped {$item->name}.");
         } catch (GameActionException $e) {

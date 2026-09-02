@@ -94,7 +94,7 @@ test('attacking while busy flashes the in-character refusal, not a raw error', f
 test('buying while busy flashes the in-character refusal, not a raw error', function () {
     [$user, $character] = actor();
     $item = Item::create([
-        'name' => 'Rusty Dagger', 'type' => 'weapon', 'strength_delta' => 2,
+        'name' => 'Rusty Dagger', 'slot' => 'weapon', 'strength_delta' => 2,
         'min_level' => 1, 'cost' => 50,
     ]);
 
@@ -227,7 +227,7 @@ test('the four battle stats and an item description render on the pages that sho
 
     $item = Item::create([
         'name' => 'Whispering Edge',
-        'type' => 'weapon',
+        'slot' => 'weapon',
         'description' => 'It hums a little, and no one agrees about the tune.',
         'strength_delta' => 3,
         'defense_delta' => -1,
