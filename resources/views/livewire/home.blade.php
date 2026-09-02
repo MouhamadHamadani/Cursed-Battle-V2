@@ -79,10 +79,33 @@
                 </div>
             </div>
 
-            <div class="text-center sm:text-start">
+            <div class="text-center sm:flex-1 sm:text-start">
                 <x-label class="text-sm uppercase tracking-widest text-yellow-600">{{ __('Level') }}</x-label>
                 <x-label class="font-uncialAntiqua text-5xl">{{ $character->level }}</x-label>
             </div>
+
+            {{-- Faction crest. Same action and the same modal as the plain bar it
+                 replaces — only the silhouette changed. Still deliberately
+                 wordless beyond the placeholder label: naming the factions is
+                 an open decision, not this pass's to make.
+
+                 The notch is cut on BOTH layers, an outer gold sheet and an
+                 inner panel inset by a single pixel of padding. A border cannot
+                 be used here: clip-path crops the border with the box, so the
+                 diagonal edges would come out bare. The focus ring stays on the
+                 unclipped <button>, so it is never cropped either. --}}
+            <button type="button" wire:click="$set('showFaction', true)"
+                    class="group w-full shrink-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500 sm:w-auto">
+                <span class="block bg-yellow-700 p-px transition duration-300 group-hover:bg-yellow-500 group-focus-visible:bg-yellow-500 [clip-path:polygon(0_0,100%_0,100%_78%,50%_100%,0_78%)]">
+                    <x-dark-wall class="flex items-center justify-center gap-3 px-6 pb-8 pt-4 [clip-path:polygon(0_0,100%_0,100%_78%,50%_100%,0_78%)]">
+                        <i class="fa-duotone fa-solid fa-flag-swallowtail text-yellow-500" aria-hidden="true"></i>
+                        <span class="text-start">
+                            <x-label class="text-xs uppercase tracking-widest text-yellow-600">{{ __('Faction') }}</x-label>
+                            <x-label class="text-lg">{{ \App\Models\Character::factionLabel($character->faction) }}</x-label>
+                        </span>
+                    </x-dark-wall>
+                </span>
+            </button>
         </div>
 
         {{-- Vitals: the three bars a fighter reads first. --}}
@@ -156,16 +179,6 @@
                 <p class="mt-2 font-sans text-xs text-stone-400">{{ __('Health and energy return on the world tick.') }}</p>
             </x-dark-wall>
         </div>
-
-        {{-- Faction. Click through for the banner's own page. --}}
-        <button type="button" wire:click="$set('showFaction', true)"
-                class="group block w-full focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500">
-            <x-dark-wall class="border border-yellow-700 p-4 flex items-center justify-center gap-3 transition duration-300 group-hover:border-yellow-500 group-focus-visible:border-yellow-500">
-                <i class="fa-duotone fa-solid fa-flag-swallowtail text-yellow-500"></i>
-                <x-label class="text-yellow-500">{{ __('Faction') }}</x-label>
-                <x-label class="text-xl">{{ \App\Models\Character::factionLabel($character->faction) }}</x-label>
-            </x-dark-wall>
-        </button>
 
         {{-- Standing and stats. --}}
         {{-- Five cells, not six: Level is the medallion above now. The old
