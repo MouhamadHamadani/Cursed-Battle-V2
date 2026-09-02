@@ -80,18 +80,46 @@
                 </x-dark-wall>
             @endif
 
-            <x-divider />
+            <x-gem-divider class="mx-auto max-w-2xl" />
 
             <div class="flex flex-wrap justify-center gap-6">
                 @foreach ($stats as $key => $stat)
-                    <x-iron-scrollwork class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(25%-1.125rem)]">
-                    <x-dark-wall class="flex flex-col border border-yellow-700 p-6 hover:border-yellow-500 transition duration-300">
-                        <div class="text-center">
-                            <i class="fa-duotone fa-solid {{ $stat['icon'] }} fa-3x text-yellow-500"></i>
-                            <x-label class="text-2xl mt-3">{{ $stat['label'] }}</x-label>
+                    @php
+                        // Which rule closes this card, or null. Same named-reason
+                        // shape as Home's quick links and Work's occupation cards.
+                        // Training has no level gate, so there are only two.
+                        // Both are TrainingService's own rules, read off the model.
+                        $closed = $this->character->isBusy() ? 'busy'
+                            : ($this->character->energy < $cost ? 'spent' : null);
+                    @endphp
+
+                    {{-- No hover promise on a closed card, and no per-card
+                         <x-iron-scrollwork>: scrollwork wraps a page's outer
+                         sheet, brass corners mark the cards inside it. The card
+                         takes over the flex basis the wrapper held. --}}
+                    <x-dark-wall @class([
+                        'relative flex basis-full flex-col border p-6 transition duration-300 sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(25%-1.125rem)]',
+                        'border-yellow-700 hover:border-yellow-500' => ! $closed,
+                        'border-stone-700' => (bool) $closed,
+                    ])>
+                        {{-- Both colours written out literally: <x-brass-corners>
+                             reads its class through a prop, and Tailwind only
+                             builds classes it can see in the calling file. --}}
+                        <x-brass-corners class="h-3 w-3 {{ $closed ? 'text-stone-700' : 'text-yellow-700/70' }}" />
+
+                        <div class="relative text-center">
+                            <x-icon-roundel size="lg" :icon="$stat['icon']" :muted="(bool) $closed" />
+                            <x-label @class(['text-2xl mt-3', 'text-stone-400' => (bool) $closed])>{{ $stat['label'] }}</x-label>
                         </div>
 
-                        <div class="mt-3 space-y-1 text-center">
+                        {{-- "Current" stays even though the band at the top of the
+                             page shows the same four figures. They do different
+                             jobs, the way Home's town map and quick-link cards do:
+                             the band compares all four side by side, this is the
+                             before-value at the point of action — and below sm the
+                             cards stack, so by the fourth one the band has scrolled
+                             off entirely. --}}
+                        <div class="relative mt-3 space-y-1 text-center">
                             <x-label class="text-sm text-stone-400">
                                 {{ __('Current') }}: <span class="text-white">{{ $this->character->{$key} }}</span>
                             </x-label>
@@ -100,10 +128,18 @@
                             </x-label>
                         </div>
 
-                        <div class="mt-auto pt-5">
-                            @if ($this->character->isBusy())
+                        <div class="relative mt-auto pt-5">
+                            @if ($closed === 'busy')
                                 <x-button class="w-full" disable>
                                     <i class="fa-duotone fa-solid fa-hourglass-half me-2"></i>{{ __('Busy') }}
+                                </x-button>
+                            @elseif ($closed === 'spent')
+                                {{-- Was the gap: below the energy cost this card
+                                     stayed enabled and the click bounced off
+                                     TrainingService with a flash error, while the
+                                     panel above already said so. --}}
+                                <x-button class="w-full" disable>
+                                    <i class="fa-duotone fa-solid fa-bed me-2"></i>{{ __('Spent') }}
                                 </x-button>
                             @else
                                 <x-button
@@ -117,7 +153,6 @@
                             @endif
                         </div>
                     </x-dark-wall>
-                    </x-iron-scrollwork>
                 @endforeach
             </div>
 
