@@ -7,10 +7,15 @@
 
     @php
         $cost = \App\Services\TrainingService::ENERGY_COST;
+        // Speed is fa-wind, not fa-bolt. Home's stat row picked fa-wind and left
+        // a note that Train should follow in its own pass: fa-bolt is Energy in
+        // the status strip at the top of this very page, so a bolt on the Speed
+        // card points at the wrong thing twice over. Dexterity keeps fa-feather
+        // (ADR-003 gives dodge to dexterity, hit chance to speed).
         $stats = [
             'strength' => ['label' => __('Strength'), 'icon' => 'fa-hand-fist', 'action' => __('Train Strength')],
             'defense' => ['label' => __('Defense'), 'icon' => 'fa-shield-halved', 'action' => __('Train Defense')],
-            'speed' => ['label' => __('Speed'), 'icon' => 'fa-bolt', 'action' => __('Train Speed')],
+            'speed' => ['label' => __('Speed'), 'icon' => 'fa-wind', 'action' => __('Train Speed')],
             'dexterity' => ['label' => __('Dexterity'), 'icon' => 'fa-feather', 'action' => __('Train Dexterity')],
         ];
     @endphp
