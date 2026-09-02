@@ -20,10 +20,41 @@ class Market extends Component
 
     public ?int $selectedItemId = null;
 
+    /**
+     * The Shop is browsed one slot at a time (V1's category tiles). This is
+     * what lets a card drop its slot text line — you already know what you're
+     * looking at. The Inventory stays a single mixed list.
+     */
+    public string $shopSlot = 'weapon';
+
     #[Computed]
     public function character()
     {
         return auth()->user()->character;
+    }
+
+    /**
+     * Switch the Shop tab. $slot is untrusted client input, so it is checked
+     * against the canonical list rather than trusted into the filter.
+     */
+    public function selectSlot(string $slot): void
+    {
+        if (in_array($slot, Item::SLOTS, true)) {
+            $this->shopSlot = $slot;
+            unset($this->shopItems);
+        }
+    }
+
+    /**
+     * The Shop grid: the listable catalogue narrowed to the active tab.
+     * Deliberately separate from items() — selectItem() and the details popup
+     * still resolve against the full listable set, so an item stays
+     * inspectable regardless of which tab is open.
+     */
+    #[Computed]
+    public function shopItems()
+    {
+        return $this->items->where('slot', $this->shopSlot)->values();
     }
 
     /**

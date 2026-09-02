@@ -7,8 +7,8 @@
 
     @php
         // Stat deltas kept as values, not a pre-joined string, so each can be
-        // coloured green/red the way V1 does. All four are always rendered, in
-        // a fixed grid, so the columns line up across every card.
+        // coloured green/red the way V1 does. This is the POPUP's view of an
+        // item — all four, zeroes included. Cards get $headlineOf instead.
         $deltasOf = fn ($item) => [
             ['label' => 'STR', 'value' => $item->strength_delta],
             ['label' => 'DEF', 'value' => $item->defense_delta],
@@ -21,16 +21,41 @@
             ? 'text-green-500'
             : ($value < 0 ? 'text-red-500' : 'text-stone-500');
 
+        // The card's single headline stat: the largest-magnitude non-zero
+        // delta. $deltasOf is already in priority order (STR > DEF > SPD > DEX)
+        // and the comparison is strict, so a magnitude tie keeps the
+        // higher-priority stat. Null when an item changes nothing.
+        $headlineOf = function ($item) use ($deltasOf) {
+            $best = null;
+            foreach ($deltasOf($item) as $delta) {
+                if ($delta['value'] !== 0 && ($best === null || abs($delta['value']) > abs($best['value']))) {
+                    $best = $delta;
+                }
+            }
+
+            return $best;
+        };
+
         // Items carry no art yet (image column is nullable) — fall back to the crest.
         $artOf = fn ($item) => $item->image && file_exists(public_path($item->image))
             ? asset($item->image)
             : asset('images/logo 2.png');
 
-        $iconOf = fn ($item) => match ($item->slot) {
+        $iconOf = fn (string $slot) => match ($slot) {
             'shield' => 'fa-shield-halved',
             'head' => 'fa-helmet-battle',
             'body' => 'fa-vest',
             default => 'fa-swords',
+        };
+
+        // `body` is a full worn suit, so it reads as "Armor" to a player — the
+        // column name is mechanical, this is the label.
+        $slotLabel = fn (string $slot) => match ($slot) {
+            'weapon' => __('Weapon'),
+            'shield' => __('Shield'),
+            'head' => __('Head'),
+            'body' => __('Armor'),
+            default => ucfirst($slot),
         };
     @endphp
 
@@ -45,10 +70,26 @@
                     <i class="fa-duotone fa-solid fa-treasure-chest me-2"></i>{{ __('Shop') }}
                 </x-label>
 
+                {{-- One slot at a time, V1's category-tile pattern. Active tab is
+                     the primary button, the rest are secondary — no class
+                     wrestling, just the two buttons the kit already has. --}}
+                <div class="flex flex-wrap justify-center gap-3 mb-6">
+                    @foreach (\App\Models\Item::SLOTS as $slot)
+                        @if ($this->shopSlot === $slot)
+                            <x-button type="button" wire:click="selectSlot('{{ $slot }}')" wire:loading.attr="disabled">
+                                <i class="fa-duotone fa-solid {{ $iconOf($slot) }} me-2"></i>{{ $slotLabel($slot) }}
+                            </x-button>
+                        @else
+                            <x-secondary-button wire:click="selectSlot('{{ $slot }}')" wire:loading.attr="disabled">
+                                <i class="fa-duotone fa-solid {{ $iconOf($slot) }} me-2"></i>{{ $slotLabel($slot) }}
+                            </x-secondary-button>
+                        @endif
+                    @endforeach
+                </div>
+
                 <div class="flex flex-wrap justify-center gap-6">
-                    @foreach ($this->items as $item)
+                    @forelse ($this->shopItems as $item)
                         @php
-                            $deltas = $deltasOf($item);
                             $owned = in_array($item->id, $this->ownedItemIds, true);
                             $locked = $this->character->level < $item->min_level;
                             $affordable = $this->character->gold >= $item->cost;
@@ -59,46 +100,12 @@
                              and the scrollwork is now that element. --}}
                         <x-iron-scrollwork wire:key="shop-{{ $item->id }}"
                                            class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
-                        <x-dark-wall class="flex flex-col border border-yellow-700 p-5 hover:border-yellow-500 transition duration-300">
-                            {{-- The card art is the "more details" entry point; the
-                                 Buy/Equip button below stays the fast path. --}}
-                            <button type="button" class="group relative block w-full"
-                                    wire:click="selectItem({{ $item->id }})"
-                                    aria-label="{{ __('Details for :name', ['name' => $item->name]) }}">
-                                <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
-                                <i class="fa-duotone fa-solid fa-circle-info absolute top-0 end-0 text-yellow-700 group-hover:text-yellow-500 transition"></i>
-                            </button>
-
-                            <x-label class="text-xl text-center mt-3">{{ $item->name }}</x-label>
-                            <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
-                                <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->slot }}
-                            </x-label>
-
-                            {{-- Flavour only — no mechanical effect, and nullable. --}}
-                            @if ($item->description)
-                                <p class="font-sans text-xs text-center italic text-stone-400 mt-2">{{ $item->description }}</p>
-                            @endif
-
-                            <div class="grid grid-cols-4 gap-2 text-center mt-3">
-                                @foreach ($deltas as $delta)
-                                    <div>
-                                        <x-label class="text-xs text-stone-400">{{ $delta['label'] }}</x-label>
-                                        <x-label class="text-lg {{ $deltaColour($delta['value']) }}">
-                                            {{ $delta['value'] > 0 ? '+' : '' }}{{ $delta['value'] }}
-                                        </x-label>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="mt-3 space-y-1 text-center">
-                                <x-label class="text-sm text-stone-400">{{ __('Req. level') }} {{ $item->min_level }}</x-label>
-                                <x-label class="text-sm">
-                                    <i class="fa-duotone fa-solid fa-coins text-yellow-500 me-1"></i>
-                                    <span class="{{ $affordable ? 'text-white' : 'text-red-500' }}">{{ $item->cost }}</span>
-                                </x-label>
-                            </div>
-
-                            <div class="mt-auto pt-5">
+                            <x-item-card :item="$item"
+                                         :art="$artOf($item)"
+                                         :icon="$iconOf($item->slot)"
+                                         :slot-label="$slotLabel($item->slot)"
+                                         :headline="$headlineOf($item)"
+                                         :affordable="$affordable">
                                 @if ($owned)
                                     <x-button class="w-full" disable>
                                         <i class="fa-duotone fa-solid fa-circle-check me-2"></i>{{ __('Owned') }}
@@ -119,10 +126,13 @@
                                         {{ __('Buy') }}
                                     </x-button>
                                 @endif
-                            </div>
-                        </x-dark-wall>
+                            </x-item-card>
                         </x-iron-scrollwork>
-                    @endforeach
+                    @empty
+                        <x-label class="text-stone-400">
+                            {{ __('No :slot wares are offered to you yet.', ['slot' => strtolower($slotLabel($this->shopSlot))]) }}
+                        </x-label>
+                    @endforelse
                 </div>
             </div>
 
@@ -136,51 +146,18 @@
 
                 <div class="flex flex-wrap justify-center gap-6">
                     @forelse ($this->inventory as $characterItem)
-                        @php
-                            $item = $characterItem->item;
-                            $deltas = $deltasOf($item);
-                        @endphp
+                        @php $item = $characterItem->item; @endphp
 
                         <x-iron-scrollwork wire:key="inv-{{ $characterItem->id }}"
                                            class="grid basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]">
-                        <x-dark-wall class="flex flex-col border {{ $characterItem->equipped ? 'border-green-500' : 'border-yellow-700' }} p-5 transition duration-300">
-                            {{-- The card art is the "more details" entry point; the
-                                 Buy/Equip button below stays the fast path. --}}
-                            <button type="button" class="group relative block w-full"
-                                    wire:click="selectItem({{ $item->id }})"
-                                    aria-label="{{ __('Details for :name', ['name' => $item->name]) }}">
-                                <img class="h-40 w-full object-contain" src="{{ $artOf($item) }}" alt="{{ $item->name }}">
-                                <i class="fa-duotone fa-solid fa-circle-info absolute top-0 end-0 text-yellow-700 group-hover:text-yellow-500 transition"></i>
-                            </button>
-
-                            <div class="flex items-center justify-center gap-2 mt-3">
-                                <x-label class="text-xl">{{ $item->name }}</x-label>
-                                @if ($characterItem->equipped)
-                                    <x-label class="text-xs uppercase tracking-widest text-green-500">{{ __('Equipped') }}</x-label>
-                                @endif
-                            </div>
-
-                            <x-label class="text-xs text-center uppercase tracking-widest text-stone-400 mt-1">
-                                <i class="fa-duotone fa-solid {{ $iconOf($item) }} me-1"></i>{{ $item->slot }}
-                            </x-label>
-
-                            {{-- Flavour only — no mechanical effect, and nullable. --}}
-                            @if ($item->description)
-                                <p class="font-sans text-xs text-center italic text-stone-400 mt-2">{{ $item->description }}</p>
-                            @endif
-
-                            <div class="grid grid-cols-4 gap-2 text-center mt-3">
-                                @foreach ($deltas as $delta)
-                                    <div>
-                                        <x-label class="text-xs text-stone-400">{{ $delta['label'] }}</x-label>
-                                        <x-label class="text-lg {{ $deltaColour($delta['value']) }}">
-                                            {{ $delta['value'] > 0 ? '+' : '' }}{{ $delta['value'] }}
-                                        </x-label>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="mt-auto pt-5">
+                            {{-- Same card as the Shop: an owned item gets no
+                                 richer treatment just because the list is shorter. --}}
+                            <x-item-card :item="$item"
+                                         :art="$artOf($item)"
+                                         :icon="$iconOf($item->slot)"
+                                         :slot-label="$slotLabel($item->slot)"
+                                         :headline="$headlineOf($item)"
+                                         :equipped="$characterItem->equipped">
                                 @if ($characterItem->equipped)
                                     <x-secondary-button
                                         class="w-full"
@@ -200,8 +177,7 @@
                                         {{ __('Equip') }}
                                     </x-button>
                                 @endif
-                            </div>
-                        </x-dark-wall>
+                            </x-item-card>
                         </x-iron-scrollwork>
                     @empty
                         <x-label class="text-stone-400">{{ __('You have no items yet.') }}</x-label>
@@ -212,8 +188,10 @@
         </div>
     </div>
 
-    {{-- "More details" popup. Same x-dark-modal + entangled wire:model.live
-         pattern as the faction panel on Home and the delete-account form. --}}
+    {{-- "More details" popup — the full tier. Everything the card omits lives
+         here: all four deltas, the flavour text, and a spelled-out slot.
+         Same x-dark-modal + entangled wire:model.live pattern as the faction
+         panel on Home and the delete-account form. --}}
     <x-dark-modal wire:model.live="showDetails" maxWidth="lg">
         @if ($this->selectedItem)
             @php
@@ -224,11 +202,11 @@
             @endphp
 
             <div class="p-8 text-center">
-                <img class="h-40 w-full object-contain" src="{{ $artOf($detail) }}" alt="{{ $detail->name }}">
+                <img class="h-56 w-full object-contain" src="{{ $artOf($detail) }}" alt="{{ $detail->name }}">
 
                 <x-label class="font-uncialAntiqua text-3xl text-yellow-500 mt-4">{{ $detail->name }}</x-label>
                 <x-label class="block text-xs uppercase tracking-widest text-stone-400 mt-1">
-                    <i class="fa-duotone fa-solid {{ $iconOf($detail) }} me-1"></i>{{ $detail->slot }}
+                    <i class="fa-duotone fa-solid {{ $iconOf($detail->slot) }} me-1"></i>{{ $slotLabel($detail->slot) }}
                 </x-label>
 
                 <x-chain-divider class="my-5" />
@@ -238,7 +216,7 @@
                 @endif
 
                 {{-- All four stats, zeroes included: this is the full breakdown,
-                     not the card's at-a-glance summary. --}}
+                     not the card's at-a-glance headline. --}}
                 <div class="grid grid-cols-4 gap-2 mt-6">
                     @foreach ($deltasOf($detail) as $delta)
                         <div>
@@ -264,7 +242,8 @@
                     </div>
                 </div>
 
-                {{-- One action, matching whichever applies to this item right now. --}}
+                {{-- One action, matching whichever applies right now, so acting
+                     never means closing the popup first. --}}
                 <div class="mt-8">
                     @if ($ownedRow && $ownedRow->equipped)
                         <x-secondary-button class="w-full" wire:click="unequip({{ $detail->id }})"

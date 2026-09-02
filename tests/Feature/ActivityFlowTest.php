@@ -249,8 +249,16 @@ test('the four battle stats and an item description render on the pages that sho
         ->assertSee('Train Strength')->assertSee('Train Defense')
         ->assertSee('Train Speed')->assertSee('Train Dexterity');
 
-    // Market: both new delta badges and the flavour text.
-    Livewire::test(Market::class)
-        ->assertSee('SPD')->assertSee('DEX')
+    // Market card tier: one headline stat only. `Whispering Edge` has
+    // SPD +4 as its largest-magnitude delta, so that is what the card shows —
+    // the rest of the breakdown and the flavour text are popup-only now.
+    $market = Livewire::test(Market::class);
+    $market->assertSee('+4 SPD')
+        ->assertDontSee($item->description)
+        ->assertDontSee('DEX');
+
+    // Market popup tier: the full four-stat breakdown plus the flavour text.
+    $market->call('selectItem', $item->id)
+        ->assertSee('STR')->assertSee('DEF')->assertSee('SPD')->assertSee('DEX')
         ->assertSee($item->description);
 });
