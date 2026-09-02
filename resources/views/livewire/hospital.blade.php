@@ -43,6 +43,18 @@
                         </x-label>
                         <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
                     </div>
+
+                    {{-- Hospital blocks combat and nothing else (ADR-001), so the
+                         way out is not "wait here" — Work, Train and Market are
+                         all still open. Home is where those four doors are, and
+                         its quick-link cards already show which of them this
+                         state closes. Without this the page stated the lockout
+                         and stopped, leaving the nav bar as the only exit. --}}
+                    <div class="mt-8">
+                        <x-button :href="route('home')" wire:navigate>
+                            <i class="fa-duotone fa-solid fa-house me-2"></i>{{ __('Back to Home') }}
+                        </x-button>
+                    </div>
                 </x-dark-leather>
                 </x-iron-scrollwork>
             @else
@@ -61,11 +73,9 @@
                         <x-label class="text-3xl">{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
                     </div>
 
-                    <a href="{{ route('battle') }}" wire:navigate class="inline-block">
-                        <x-button type="button">
-                            <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Go to Battle') }}
-                        </x-button>
-                    </a>
+                    <x-button :href="route('battle')" wire:navigate>
+                        <i class="fa-duotone fa-solid fa-swords me-2"></i>{{ __('Go to Battle') }}
+                    </x-button>
                 </x-dark-leather>
                 </x-iron-scrollwork>
             @endif
