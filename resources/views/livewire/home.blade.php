@@ -10,6 +10,13 @@
         <div class="space-y-8">
         @php
             $xpThreshold = app(\App\Services\LevelingService::class)->threshold($character->level);
+
+            // Refill clocks. Delegated whole, same as the XP threshold above —
+            // the tick interval and the cron allowance are RegenService's.
+            // Null on either means that bar is already full, so no clock.
+            $regen = app(\App\Services\RegenService::class);
+            $healthFullAt = $regen->healthFullAt($character);
+            $energyFullAt = $regen->energyFullAt($character);
             $pct = fn (int $value, int $max) => $max > 0 ? min(100, max(0, round($value / $max * 100))) : 0;
 
             // How many of the ten rivets are lit. ceil, not round, so any
@@ -152,6 +159,16 @@
                         <span @class(['flex-1', 'bg-red-500' => $i < $lit($character->health, $character->max_health)])></span>
                     @endfor
                 </div>
+                {{-- A second clock alongside the status bar's, same shape as the
+                     session countdown above: both dispatch character-updated at
+                     zero and the listeners are idempotent, so the duplicate is
+                     harmless. Omitted entirely on a full bar. --}}
+                @if ($healthFullAt)
+                    <p class="mt-2 font-sans text-xs text-stone-400">
+                        {{ __('Full in') }}
+                        <x-activity-countdown :completes-at="$healthFullAt" event="character-updated" class="text-yellow-600" />
+                    </p>
+                @endif
             </x-dark-wall>
 
             <x-dark-wall class="relative border border-yellow-700 p-4">
@@ -178,6 +195,13 @@
                         <span @class(['flex-1', 'bg-yellow-700' => $i < $lit($character->energy, $character->max_energy)])></span>
                     @endfor
                 </div>
+                @if ($energyFullAt)
+                    <p class="mt-2 font-sans text-xs text-stone-400">
+                        {{ __('Full in') }}
+                        <x-activity-countdown :completes-at="$energyFullAt" event="character-updated" class="text-yellow-600" />
+                    </p>
+                @endif
+                {{-- Kept below the clocks: they say when, this says why. --}}
                 <p class="mt-2 font-sans text-xs text-stone-400">{{ __('Health and energy return on the world tick.') }}</p>
             </x-dark-wall>
         </div>

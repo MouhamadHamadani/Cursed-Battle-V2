@@ -73,10 +73,16 @@ class CombatService
      * Pure dodge-chance calculation — single source of truth, used inside
      * the sim and directly unit-testable. Fed by dexterity since ADR-003;
      * the formula and the cap are unchanged from ADR-001.
+     *
+     * Floored at 0 for the same reason effectiveMissChance floors: a shield's
+     * negative dexterity_delta (ADR-003 §5) can drive EFFECTIVE dexterity below
+     * the base column's unsigned floor, and a negative percentage is not a
+     * chance. Floor only — it never changes how many rolls are drawn, so every
+     * seeded sequence is untouched.
      */
     public function effectiveDodgeChance(int $dexterity): int
     {
-        return min(intdiv($dexterity, 2), self::DODGE_CAP);
+        return min(max(0, intdiv($dexterity, 2)), self::DODGE_CAP);
     }
 
     /**
@@ -290,6 +296,12 @@ class CombatService
         $attackerSnapshot = $this->effectiveStats($attacker) + ['health' => $attacker->health];
         $defenderSnapshot = $this->effectiveStats($defender) + ['health' => $defender->health];
 
+        // Levels belong to the same snapshot: awardXp() below can level the
+        // winner up inside this transaction, and the log is a record of the
+        // fight as fought, not of the roster after it.
+        $attackerLevel = (int) $attacker->level;
+        $defenderLevel = (int) $defender->level;
+
         $attacker->health = max(0, $hp['attacker']);
         $defender->health = max(0, $hp['defender']);
 
@@ -327,8 +339,8 @@ class CombatService
         CombatLog::create([
             'attacker_id' => $attacker->id,
             'defender_id' => $defender->id,
-            'attacker_level' => $attacker->level,
-            'defender_level' => $defender->level,
+            'attacker_level' => $attackerLevel,
+            'defender_level' => $defenderLevel,
             'attacker_stats' => $attackerSnapshot,
             'defender_stats' => $defenderSnapshot,
             'events' => $events,

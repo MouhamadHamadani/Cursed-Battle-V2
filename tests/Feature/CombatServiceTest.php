@@ -18,7 +18,7 @@ use Random\Randomizer;
 // loser) dexterity 0 means it never dodges — outcomes below are deterministic
 // for ANY seed.
 test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the winner xp', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,
@@ -28,7 +28,7 @@ test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the
         'defense' => 5,
         'dexterity' => 5,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -59,7 +59,7 @@ test('a one-shot knockout wins instantly, hospitalizes the loser, and awards the
 
 test('a defender with high effective defense and dexterity wins the 10-round tiebreak on remaining hp', function () {
     // Attacker: too weak to hurt the defender (floors to 1 dmg, 75% dodged) but never dodges defender's real hits.
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 1000,
@@ -68,7 +68,7 @@ test('a defender with high effective defense and dexterity wins the 10-round tie
         'dexterity' => 0, // never dodges defender's hits
     ]);
     // Defender: hits hard and is nearly unhittable, so it only ever loses a few chip points.
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 1000,
@@ -134,7 +134,7 @@ test('effectiveMissChance scales with the speed deficit and caps at MISS_CAP', f
 test('a slower attacker misses, and a miss is recorded as a miss rather than as a dodge', function () {
     // Dodge is switched OFF (defender dexterity 0), so every whiff here can
     // only be a miss. This is what proves the miss roll actually runs.
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 200,
@@ -143,7 +143,7 @@ test('a slower attacker misses, and a miss is recorded as a miss rather than as 
         'speed' => 0,   // 200 slower than the target -> MISS_CAP 40%
         'dexterity' => 0,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 1000, // deep enough that no KO cuts the fight short
@@ -176,7 +176,7 @@ test('a slower attacker misses, and a miss is recorded as a miss rather than as 
 test('miss is rolled before dodge, so the two outcomes stay distinct in one fight', function () {
     // Both defences maxed: 40% miss AND a 75%-capped dodge on what gets past
     // it. Both labels must appear, and neither may be reported as the other.
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 200,
@@ -185,7 +185,7 @@ test('miss is rolled before dodge, so the two outcomes stay distinct in one figh
         'speed' => 0,
         'dexterity' => 0,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 1000,
@@ -215,7 +215,7 @@ test('miss is rolled before dodge, so the two outcomes stay distinct in one figh
 });
 
 test('every landed hit deals at least the minimum damage floor even when strength is far below defense', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 5000,
@@ -223,7 +223,7 @@ test('every landed hit deals at least the minimum damage floor even when strengt
         'defense' => 1000,
         'dexterity' => 100,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 1000,
@@ -246,7 +246,7 @@ test('every landed hit deals at least the minimum damage floor even when strengt
 });
 
 test('winning a fight steals exactly the gold-steal percentage from the loser', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 0,
@@ -255,7 +255,7 @@ test('winning a fight steals exactly the gold-steal percentage from the loser', 
         'defense' => 5,
         'dexterity' => 5,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -275,7 +275,7 @@ test('winning a fight steals exactly the gold-steal percentage from the loser', 
 });
 
 test('effectiveStats reflects base stats plus only the equipped items deltas', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'strength' => 5,
         'defense' => 5,
@@ -323,7 +323,7 @@ test('effectiveStats reflects base stats plus only the equipped items deltas', f
 });
 
 test('attacking yourself is rejected and nothing is persisted', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
@@ -339,13 +339,13 @@ test('attacking yourself is rejected and nothing is persisted', function () {
 });
 
 test('an attacker who is hospitalized cannot attack and nothing is persisted', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
         'hospitalized_until' => now()->addMinutes(10),
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
@@ -364,12 +364,12 @@ test('an attacker who is hospitalized cannot attack and nothing is persisted', f
 });
 
 test('a hospitalized defender cannot be attacked and nothing is persisted', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
@@ -389,12 +389,12 @@ test('a hospitalized defender cannot be attacked and nothing is persisted', func
 });
 
 test('an attacker with zero health cannot fight and nothing is persisted', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 0,
         'gold' => 100,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'gold' => 100,
@@ -427,7 +427,7 @@ test('two identically seeded Randomizers produce identical getInt sequences', fu
 });
 
 test('resolving a fight writes exactly one combat log with the winner, events, and gold/xp deltas', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 0,
@@ -437,7 +437,7 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
         'defense' => 5,
         'dexterity' => 5,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -463,7 +463,7 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
 // --- Gap-fill: turn order, in-fight dodge, anti-farm XP, zero-gold steal, non-KO tiebreak win ---
 
 test('the higher-speed defender acts first and can knock out the attacker before it swings', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -471,7 +471,7 @@ test('the higher-speed defender acts first and can knock out the attacker before
         'defense' => 5,
         'speed' => 50,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -494,7 +494,7 @@ test('the higher-speed defender acts first and can knock out the attacker before
 });
 
 test('mirror: the higher-speed attacker acts first and can knock out the defender before it swings', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -502,7 +502,7 @@ test('mirror: the higher-speed attacker acts first and can knock out the defende
         'defense' => 5,
         'speed' => 100, // higher than defender's 50 -> attacker acts first
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -532,7 +532,7 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
     // only test that exercises the dodged:true branch inside resolve()
     // itself (effectiveDodgeChance is otherwise only unit-tested in
     // isolation above).
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -540,7 +540,7 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
         'defense' => 5,
         'dexterity' => 0,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 300,
@@ -563,14 +563,14 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
 });
 
 test('winner xp is halved by the anti-farm gap when a high-level attacker beats a much lower-level defender', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 20,
         'xp' => 0,
         'health' => 100,
         'strength' => 1000,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'health' => 100,
@@ -589,14 +589,14 @@ test('winner xp is halved by the anti-farm gap when a high-level attacker beats 
 });
 
 test('gold steal from a loser with zero gold transfers nothing and leaves both balances unchanged', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
         'health' => 100,
         'strength' => 1000,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 0,
@@ -622,7 +622,7 @@ test('an attacker who wins the 10-round tiebreak on remaining hp still hospitali
     // damage floor (10 - 5 - 1 = 4/round minimum) caps the defender's worst
     // case at 120 - 40 = 80, which is always < 90 -- so the attacker always
     // wins the tiebreak and neither side is ever knocked out.
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 0,
@@ -631,7 +631,7 @@ test('an attacker who wins the 10-round tiebreak on remaining hp still hospitali
         'defense' => 5,
         'dexterity' => 0,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -665,7 +665,7 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
     // After MAX_ROUNDS with no KO both sit at exactly 40 HP -- a true tie, which
     // ADR-001 resolves in the defender's favour (no draw in MVP). This is the
     // only test that exercises that exact-equality tiebreak branch.
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -674,7 +674,7 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
         'defense' => 5,
         'dexterity' => 0,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 0,
@@ -706,8 +706,8 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
 
 test('a busy attacker cannot fight, and the refusal names what they are doing', function () {
     $attackerUser = User::factory()->create();
-    $attacker = Character::create(['user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10]);
-    $defender = Character::create(['user_id' => User::factory()->create()->id]);
+    $attacker = Character::forceCreate(['user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10]);
+    $defender = Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     app(WorkService::class)->start($attacker, Occupation::create([
         'name' => 'Grave Digger', 'description' => 'Dig.', 'min_level' => 1,
@@ -722,11 +722,11 @@ test('a busy attacker cannot fight, and the refusal names what they are doing', 
 
 test('a busy defender CAN still be attacked — a shift is not invulnerability', function () {
     $attackerUser = User::factory()->create();
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => $attackerUser->id,
         'health' => 200, 'max_health' => 200, 'strength' => 1000, 'dexterity' => 5,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id, 'level' => 1, 'energy' => 10, 'dexterity' => 0,
     ]);
 
@@ -745,11 +745,11 @@ test('a busy defender CAN still be attacked — a shift is not invulnerability',
 
 test('a finished session unblocks attacking without any explicit resolve call', function () {
     $attackerUser = User::factory()->create();
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => $attackerUser->id, 'level' => 1, 'energy' => 10,
         'health' => 200, 'max_health' => 200, 'strength' => 1000, 'dexterity' => 5,
     ]);
-    $defender = Character::create(['user_id' => User::factory()->create()->id, 'dexterity' => 0]);
+    $defender = Character::forceCreate(['user_id' => User::factory()->create()->id, 'dexterity' => 0]);
 
     app(TrainingService::class)->start($attacker, 'strength');
 
@@ -763,4 +763,50 @@ test('a finished session unblocks attacking without any explicit resolve call', 
     expect($attacker->refresh()->activity_type)->toBeNull();
 
     $this->travelBack();
+});
+
+// --- QA sweep: invariants asserted directly on the pure functions and the log ---
+
+test('effectiveDodgeChance floors at zero, so a gear-driven negative dexterity is never a negative chance', function () {
+    $service = new CombatService;
+
+    // A shield carries a negative dexterity_delta (ADR-003 §5), so effective
+    // dexterity can land below the base column's unsigned floor. Both caps are
+    // stated as "cap at DODGE_CAP, floor at 0" — effectiveMissChance already
+    // floors with max(0, …); this is the same invariant on the other roll.
+    expect($service->effectiveDodgeChance(-1))->toBe(0);
+    expect($service->effectiveDodgeChance(-10))->toBe(0);
+    expect($service->effectiveDodgeChance(-1000))->toBe(0);
+});
+
+test('the combat log records the levels the fight was actually fought at, not the winner post level-up', function () {
+    // 99 xp + a 60 xp win crosses threshold(1) = 100, so the attacker levels to
+    // 2 inside the same transaction that writes the log.
+    $attacker = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'xp' => 99,
+        'gold' => 0,
+        'health' => 100,
+        'strength' => 1000,
+        'defense' => 5,
+        'dexterity' => 5,
+    ]);
+    $defender = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'level' => 1,
+        'gold' => 100,
+        'health' => 100,
+        'strength' => 5,
+        'defense' => 5,
+        'dexterity' => 0,
+    ]);
+
+    (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    expect($attacker->refresh()->level)->toBe(2); // the level-up really happened
+
+    $log = CombatLog::sole();
+    expect($log->attacker_level)->toBe(1); // the fight was fought at level 1
+    expect($log->defender_level)->toBe(1);
 });

@@ -9,7 +9,7 @@ use App\Services\WorkService;
 
 function worker(array $overrides = []): Character
 {
-    return Character::create(array_merge([
+    return Character::forceCreate(array_merge([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'energy' => 10,
@@ -302,7 +302,7 @@ test('a completed shift resolves itself when the next start is attempted', funct
     (new WorkService)->start($character, $job);
 
     $this->travel(6)->minutes();
-    $character->update(['energy' => 4]); // regen ticked while the shift ran
+    $character->forceFill(['energy' => 4])->save(); // regen ticked while the shift ran
 
     (new WorkService)->start($character, $job);
 
@@ -310,6 +310,30 @@ test('a completed shift resolves itself when the next start is attempted', funct
     expect($character->gold)->toEqual(20);             // first shift landed
     expect($character->activity_energy_spent)->toEqual(4); // second shift running
     expect($character->energy)->toEqual(0);
+
+    $this->travelBack();
+});
+
+test('a shift whose xp trickle levels the character up is resolved before the level gate is judged', function () {
+    // ADR-002 §2 lists "top of WorkService::start()" as a resolution point. The
+    // gate has to be judged against the level the character will have once the
+    // finished shift lands, or the newly-qualified job stays permanently
+    // unreachable from this action: the throw happens before the resolve, so
+    // repeating the click never settles the session either.
+    $character = worker(['level' => 1, 'xp' => 90, 'energy' => 10]);
+    $starter = occupation(['name' => 'Grave Digger', 'min_level' => 1, 'max_level' => 5]);
+    $senior = occupation(['name' => 'Cursed Courier', 'min_level' => 2, 'max_level' => 10, 'gold_per_energy' => 4]);
+
+    (new WorkService)->start($character, $starter); // 10 energy → 10 xp trickle → 100 xp → level 2
+
+    $this->travel(6)->minutes();
+
+    (new WorkService)->start($character, $senior);
+
+    $character->refresh();
+    expect($character->level)->toEqual(2);                  // the finished shift landed and levelled
+    expect($character->activity_type)->toBe('work');        // and the senior shift actually started
+    expect($character->activity_gold_rate)->toEqual(4);
 
     $this->travelBack();
 });

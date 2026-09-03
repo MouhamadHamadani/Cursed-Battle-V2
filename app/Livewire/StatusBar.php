@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\Character;
 use App\Services\ActivityService;
 use App\Services\LevelingService;
+use App\Services\RegenService;
+use Carbon\CarbonImmutable;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -43,6 +45,24 @@ class StatusBar extends Component
     }
 
     /**
+     * When the energy bar fills, or null when it already is. Delegated whole
+     * to RegenService — the tick interval and the cron allowance are its
+     * business, not this component's.
+     */
+    #[Computed]
+    public function energyFullAt(): ?CarbonImmutable
+    {
+        return app(RegenService::class)->energyFullAt($this->character);
+    }
+
+    /** When the health bar fills, or null when it already is. */
+    #[Computed]
+    public function healthFullAt(): ?CarbonImmutable
+    {
+        return app(RegenService::class)->healthFullAt($this->character);
+    }
+
+    /**
      * Re-read after any action that mutates the character. The component
      * holds no state of its own, so dropping the computed caches is the
      * whole refresh — Work, Train, Battle and Market dispatch this.
@@ -50,7 +70,7 @@ class StatusBar extends Component
     #[On('character-updated')]
     public function onCharacterUpdated(): void
     {
-        unset($this->character, $this->xpThreshold);
+        unset($this->character, $this->xpThreshold, $this->energyFullAt, $this->healthFullAt);
     }
 
     /**
@@ -65,7 +85,7 @@ class StatusBar extends Component
             app(ActivityService::class)->resolvePending($this->character);
         }
 
-        unset($this->character, $this->xpThreshold);
+        unset($this->character, $this->xpThreshold, $this->energyFullAt, $this->healthFullAt);
         $this->dispatch('character-updated');
     }
 

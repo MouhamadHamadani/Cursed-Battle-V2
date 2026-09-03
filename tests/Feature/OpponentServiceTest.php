@@ -9,7 +9,7 @@ use App\Services\OpponentService;
 /** A character with sane defaults; pass overrides for whatever the test cares about. */
 function fighter(array $attributes = []): Character
 {
-    return Character::create(['user_id' => User::factory()->create()->id] + $attributes);
+    return Character::forceCreate(['user_id' => User::factory()->create()->id] + $attributes);
 }
 
 function opponents(): OpponentService
@@ -120,7 +120,7 @@ test('a fruitless search costs nothing', function () {
     $them = fighter();
 
     opponents()->find($me);                    // free, reveals the only other character
-    $them->update(['hospitalized_until' => now()->addMinutes(10)]);
+    $them->forceFill(['hospitalized_until' => now()->addMinutes(10)])->save();
 
     expect(fn () => opponents()->find($me->fresh()))
         ->toThrow(GameActionException::class, 'There is no one else to face.');
@@ -129,22 +129,27 @@ test('a fruitless search costs nothing', function () {
     expect($me->fresh()->opponent_rerolls)->toEqual(0);
 });
 
-test('a mark hospitalized after being revealed clears itself and the replacement is free', function () {
+test('a mark hospitalized after being revealed reads as no mark, and the replacement is free', function () {
     $me = fighter(['gold' => 100]);
     fighter();
     fighter();
 
     // Which of the two is revealed is random — hospitalize whoever it was.
     $revealed = opponents()->find($me);
-    $revealed->update(['hospitalized_until' => now()->addMinutes(10)]);
+    $revealed->forceFill(['hospitalized_until' => now()->addMinutes(10)])->save();
 
     expect(opponents()->current($me->fresh()))->toBeNull();
-    expect($me->fresh()->opponent_id)->toBeNull();
     expect(opponents()->cost($me->fresh()))->toEqual(0);
 
-    opponents()->find($me->fresh());
+    // current() is a pure read (it runs twice per Battle render), so the stale
+    // id survives until an action overwrites it. Inert either way: every reader
+    // goes through current(), which reports no mark.
+    expect($me->fresh()->opponent_id)->toEqual($revealed->id);
 
-    expect($me->fresh()->gold)->toEqual(100);
+    $replacement = opponents()->find($me->fresh());
+
+    expect($me->fresh()->gold)->toEqual(100);              // the free replacement still stands
+    expect($me->fresh()->opponent_id)->toEqual($replacement->id); // and the stale id is overwritten
 });
 
 test('a deleted mark clears the reveal', function () {
@@ -213,7 +218,7 @@ test('losing a fight also resets the search to free', function () {
     ]);
 
     opponents()->find($me);
-    $me->update(['opponent_rerolls' => 3]);
+    $me->forceFill(['opponent_rerolls' => 3])->save();
 
     $result = app(CombatService::class)->resolve($me->fresh(), $them);
 
@@ -231,7 +236,7 @@ test('the defender search state is untouched - they did not choose the fight', f
     $bystander = fighter();
 
     // The defender has a search of their own in flight.
-    $them->update(['opponent_id' => $bystander->id, 'opponent_rerolls' => 2]);
+    $them->forceFill(['opponent_id' => $bystander->id, 'opponent_rerolls' => 2])->save();
     opponents()->find($me);
 
     app(CombatService::class)->resolve($me->fresh(), $them);
@@ -243,7 +248,7 @@ test('the defender search state is untouched - they did not choose the fight', f
 test('the re-roll price is capped so the arithmetic stays bounded', function () {
     $me = fighter(['gold' => 100, 'opponent_rerolls' => 999]);
     $them = fighter();
-    $me->update(['opponent_id' => $them->id]);
+    $me->forceFill(['opponent_id' => $them->id])->save();
 
     $capped = OpponentService::REROLL_BASE * (2 ** OpponentService::REROLL_EXPONENT_CAP);
 

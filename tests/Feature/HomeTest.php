@@ -58,7 +58,7 @@ test('the headcount is hidden when the config flag is off', function () {
 
 test('a busy character sees all four quick links marked busy', function () {
     $user = User::factory()->create();
-    $user->character()->create([
+    $user->character()->forceCreate([
         'activity_type' => 'work',
         'activity_completes_at' => now()->addMinutes(9),
         'activity_energy_spent' => 5,
@@ -75,7 +75,7 @@ test('a busy character sees all four quick links marked busy', function () {
 
 test('a hospitalized character sees only the battle link marked', function () {
     $user = User::factory()->create();
-    $user->character()->create(['hospitalized_until' => now()->addMinutes(37)]);
+    $user->character()->forceCreate(['hospitalized_until' => now()->addMinutes(37)]);
 
     $response = $this->actingAs($user)->get('/home');
 
@@ -96,4 +96,37 @@ test('a healthy idle character sees no quick link marked', function () {
     $response->assertDontSee('fa-hourglass-half me-1"></i>Busy', false);
     $response->assertDontSee('In hospital');
     $response->assertSee('Test thy steel on another.');
+});
+
+test('the vitals cards carry a refill clock only for a bar that is not full', function () {
+    $user = User::factory()->create();
+    $character = $user->character()->create([])->refresh();
+    // Health short, energy full: the health card must show a clock and the
+    // energy card must not, so a full bar is never given a countdown to
+    // nowhere.
+    $character->forceFill(['health' => 40, 'energy' => $character->max_energy])->save();
+
+    $response = $this->actingAs($user)->get('/home');
+
+    $response->assertStatus(200);
+    $response->assertSeeText('Full in');
+    // One clock, not two — the energy card is full and renders none.
+    expect(substr_count($response->getContent(), 'Full in'))->toBe(1);
+});
+
+test('a character full on both bars gets no refill clock at all', function () {
+    $user = User::factory()->create();
+    $character = $user->character()->create([])->refresh();
+    $character->forceFill([
+        'health' => $character->max_health,
+        'energy' => $character->max_energy,
+    ])->save();
+
+    $response = $this->actingAs($user)->get('/home');
+
+    $response->assertStatus(200);
+    $response->assertDontSee('Full in');
+    // The explanation of the mechanic stays regardless — it says why, the
+    // clocks say when.
+    $response->assertSeeText('Health and energy return on the world tick.');
 });

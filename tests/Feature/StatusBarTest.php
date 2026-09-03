@@ -8,7 +8,7 @@ use Livewire\Livewire;
 
 test('the status bar shows the authenticated character level, xp, gold, health and energy', function () {
     $user = User::factory()->create();
-    Character::create([
+    Character::forceCreate([
         'user_id' => $user->id,
         'level' => 3,
         'xp' => 42,
@@ -35,13 +35,13 @@ test('the status bar re-reads the character when character-updated is dispatched
     $user = User::factory()->create();
     // Gold values chosen not to collide with the health/energy readouts,
     // so assertDontSee below actually proves the old value is gone.
-    $character = Character::create(['user_id' => $user->id, 'gold' => 4242]);
+    $character = Character::forceCreate(['user_id' => $user->id, 'gold' => 4242]);
 
     $this->actingAs($user);
     $component = Livewire::test(StatusBar::class)->assertSee('4242');
 
     // Mutate behind the component's back, the way a service call would.
-    $character->update(['gold' => 9191]);
+    $character->forceFill(['gold' => 9191])->save();
 
     $component->dispatch('character-updated')
         ->assertSee('9191')

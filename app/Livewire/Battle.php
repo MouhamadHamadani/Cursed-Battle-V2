@@ -8,6 +8,7 @@ use App\Services\GameActionException;
 use App\Services\OpponentService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -47,6 +48,19 @@ class Battle extends Component
     public function opponent(): ?Character
     {
         return app(OpponentService::class)->current($this->character);
+    }
+
+    /**
+     * Re-read after anything mutates the character elsewhere on the page — the
+     * status bar broadcasts this once a countdown settles a session. Without
+     * it the "at thy labours" banner and the Busy-locked Seek/Attack buttons
+     * survive the session that caused them, until a full page load. Same
+     * listener Work, Train and Home carry; refreshState() dispatches it.
+     */
+    #[On('character-updated')]
+    public function refreshCharacter(): void
+    {
+        unset($this->character, $this->opponent, $this->searchCost);
     }
 
     /** Gold the next search costs: 0 for the first, escalating per re-roll. */

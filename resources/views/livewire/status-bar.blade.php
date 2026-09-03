@@ -25,11 +25,31 @@
                 <div class="flex flex-1 justify-center items-center gap-x-2" title="{{ __('Health') }}">
                     <i class="fa-duotone fa-solid fa-heart text-red-500"></i>
                     <x-label>{{ $this->character->health }} / {{ $this->character->max_health }}</x-label>
+                    {{-- Refill clock, rendered only while there is a gap to
+                         close, so a full bar stays a plain figure. It fires
+                         character-updated at zero, which is the same refresh
+                         every action already dispatches. --}}
+                    @if ($this->healthFullAt)
+                        <x-activity-countdown
+                            :completes-at="$this->healthFullAt"
+                            event="character-updated"
+                            class="text-xs text-yellow-500"
+                            :title="__('Until full health')"
+                        />
+                    @endif
                 </div>
 
                 <div class="flex flex-1 justify-center items-center gap-x-2" title="{{ __('Energy') }}">
                     <i class="fa-duotone fa-solid fa-bolt text-yellow-700"></i>
                     <x-label>{{ $this->character->energy }} / {{ $this->character->max_energy }}</x-label>
+                    @if ($this->energyFullAt)
+                        <x-activity-countdown
+                            :completes-at="$this->energyFullAt"
+                            event="character-updated"
+                            class="text-xs text-yellow-500"
+                            :title="__('Until full energy')"
+                        />
+                    @endif
                 </div>
 
                 {{-- Status badges get their own full-width row (basis-full) so the

@@ -36,11 +36,14 @@ class Character extends Model
     }
 
     /**
-     * The attributes that aren't mass assignable.
+     * The only two columns request-influenced code may set. Everything else
+     * (gold, xp, level, stats, hospitalized_until, ...) is server-decided and
+     * must go through explicit property assignment + save(), not mass
+     * assignment. Tests that seed full character state use forceCreate().
      *
      * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $fillable = ['user_id', 'faction'];
 
     /**
      * Get the attributes that should be cast.

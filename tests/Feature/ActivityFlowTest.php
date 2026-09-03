@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Battle;
+use App\Livewire\Home;
 use App\Livewire\Market;
 use App\Livewire\StatusBar;
 use App\Livewire\Train;
@@ -16,7 +17,7 @@ use Livewire\Livewire;
 function actor(array $overrides = []): array
 {
     $user = User::factory()->create();
-    $character = Character::create(array_merge([
+    $character = Character::forceCreate(array_merge([
         'user_id' => $user->id,
         'level' => 1,
         'energy' => 10,
@@ -78,11 +79,11 @@ test('the train component starts a drill and flashes that it has begun', functio
 
 test('attacking while busy flashes the in-character refusal, not a raw error', function () {
     [$user, $character] = actor();
-    $defender = Character::create(['user_id' => User::factory()->create()->id, 'level' => 1]);
+    $defender = Character::forceCreate(['user_id' => User::factory()->create()->id, 'level' => 1]);
 
     // Mark revealed before the shift started — searching is blocked while busy,
     // but a mark already in hand still lets the player reach for Attack.
-    $character->update(['opponent_id' => $defender->id]);
+    $character->forceFill(['opponent_id' => $defender->id])->save();
     app(WorkService::class)->start($character, digging());
 
     $this->actingAs($user);
@@ -164,7 +165,7 @@ test('busy and hospitalized badges both render, in their own row, when a charact
     // must at least look sane.
     [$user, $character] = actor();
     app(WorkService::class)->start($character, digging());
-    $character->update(['hospitalized_until' => now()->addMinutes(30)]);
+    $character->forceFill(['hospitalized_until' => now()->addMinutes(30)])->save();
 
     expect($character->refresh()->isBusy())->toBeTrue();
     expect($character->isHospitalized())->toBeTrue();
@@ -240,7 +241,7 @@ test('the four battle stats and an item description render on the pages that sho
     $this->actingAs($user);
 
     // Home: both new stat cells, with their values.
-    Livewire::test(\App\Livewire\Home::class)
+    Livewire::test(Home::class)
         ->assertSee('Speed')->assertSee('Dexterity')
         ->assertSee('7')->assertSee('9');
 
@@ -261,4 +262,27 @@ test('the four battle stats and an item description render on the pages that sho
     $market->call('selectItem', $item->id)
         ->assertSee('STR')->assertSee('DEF')->assertSee('SPD')->assertSee('DEX')
         ->assertSee($item->description);
+});
+
+test('the market and the battle page lift their busy panels when the session completes elsewhere on the page', function () {
+    // The status bar is the only component that hears <x-activity-countdown>'s
+    // 'activity-completed'; it resolves the session and re-broadcasts
+    // 'character-updated' for every other component on the page. Work, Train
+    // and Home listen for it. Market and Battle render the same busy lock and
+    // must lift it the same way, or the panel and the greyed-out buttons stay
+    // on screen until a full page load.
+    [$user, $character] = actor();
+    app(WorkService::class)->start($character, digging());
+
+    $this->actingAs($user);
+
+    $market = Livewire::test(Market::class)->assertSee('--:--');   // <x-activity-countdown>
+    $battle = Livewire::test(Battle::class)->assertSee('--:--');
+
+    $this->travel(6)->minutes();
+
+    $market->dispatch('character-updated')->assertDontSee('--:--');
+    $battle->dispatch('character-updated')->assertDontSee('--:--');
+
+    $this->travelBack();
 });

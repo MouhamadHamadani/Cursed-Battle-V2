@@ -8,7 +8,7 @@ use App\Services\TrainingService;
 
 function trainee(array $overrides = []): Character
 {
-    return Character::create(array_merge([
+    return Character::forceCreate(array_merge([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'energy' => 10,

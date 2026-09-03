@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Services\LevelingService;
 
 test('award below threshold accrues xp without leveling up', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,
@@ -24,7 +24,7 @@ test('award below threshold accrues xp without leveling up', function () {
 });
 
 test('award exactly the threshold levels up once, resets xp, and heals/refills to the new max', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,
@@ -46,7 +46,7 @@ test('award exactly the threshold levels up once, resets xp, and heals/refills t
 });
 
 test('a large single award multi-levels with correct carryover xp', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,
@@ -67,7 +67,7 @@ test('a large single award multi-levels with correct carryover xp', function () 
 });
 
 test('carryover xp is exact when pre-existing xp plus the award crosses the threshold', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 30,
@@ -86,7 +86,7 @@ test('carryover xp is exact when pre-existing xp plus the award crosses the thre
 });
 
 test('a damaged character that levels up is healed to the full new max health and energy', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,
@@ -103,7 +103,7 @@ test('a damaged character that levels up is healed to the full new max health an
 });
 
 test('a below-threshold award still persists xp to the database', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'xp' => 0,

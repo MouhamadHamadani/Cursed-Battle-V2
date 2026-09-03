@@ -35,9 +35,17 @@ class OpponentService
      * The mark currently revealed, or null if there is none.
      *
      * A reveal the game itself invalidated — the mark got hospitalized after
-     * being revealed — is cleared here, which makes the replacement free. The
-     * player paid for a usable target and did not get to use it; charging
-     * again for the game's own doing would be a bug, not a balance choice.
+     * being revealed, or was deleted — reads as no mark at all, which makes the
+     * replacement free (cost() prices off this). The player paid for a usable
+     * target and did not get to use it; charging again for the game's own doing
+     * would be a bug, not a balance choice.
+     *
+     * PURE READ. This runs twice per Battle render (the opponent and searchCost
+     * computeds), so it must not write: clearing opponent_id here turned a plain
+     * GET into two UPDATEs. Nothing needs the write — find() overwrites
+     * opponent_id on its next success and CombatService::persistOutcome() clears
+     * it after a committed fight, so a stale id is inert until then and every
+     * reader routes through this method.
      */
     public function current(Character $character): ?Character
     {
@@ -47,13 +55,7 @@ class OpponentService
 
         $opponent = Character::with('user')->find($character->opponent_id);
 
-        if ($opponent === null || $opponent->isHospitalized()) {
-            $character->update(['opponent_id' => null]);
-
-            return null;
-        }
-
-        return $opponent;
+        return $opponent === null || $opponent->isHospitalized() ? null : $opponent;
     }
 
     /**
@@ -120,15 +122,6 @@ class OpponentService
 
             return $opponent;
         });
-    }
-
-    /**
-     * Drop the reveal and put the price back to free. Called when a fight is
-     * committed (CombatService), win or lose.
-     */
-    public function clear(Character $character): void
-    {
-        $character->update(['opponent_id' => null, 'opponent_rerolls' => 0]);
     }
 
     private function rerollCost(int $rerollsAlreadyBought): int

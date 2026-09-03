@@ -35,14 +35,19 @@ class WorkService
      */
     public function start(Character $character, Occupation $occupation): ActivityResult
     {
+        // Resolve first (ADR-002 §2 names the top of start() as a resolution
+        // point), THEN judge the gates. A finished shift's xp trickle can level
+        // the character up, so the level gate has to be judged against the level
+        // they will have — otherwise the throw happens before the resolve and a
+        // newly-qualified occupation stays permanently unreachable from here,
+        // since repeating the click never settles the session either.
+        app(ActivityService::class)->resolvePending($character);
+
         // Level gate: max_level null = no upper cap.
         if ($character->level < $occupation->min_level ||
             ($occupation->max_level !== null && $character->level > $occupation->max_level)) {
             throw new GameActionException('You are not the right level for this work.');
         }
-
-        // Resolve first, then check busy (ADR-002 §4).
-        app(ActivityService::class)->resolvePending($character);
 
         if ($character->isBusy()) {
             throw new GameActionException('Thou art already '.ActivityService::describe($character->activity_type).'. Finish before taking up another task.');

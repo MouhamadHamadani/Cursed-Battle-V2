@@ -4,14 +4,17 @@ use App\Livewire\Market;
 use App\Models\Character;
 use App\Models\CharacterItem;
 use App\Models\Item;
+use App\Models\Occupation;
 use App\Models\User;
+use App\Services\CombatService;
 use App\Services\GameActionException;
 use App\Services\MarketService;
+use App\Services\WorkService;
 use Database\Factories\ItemFactory;
 use Livewire\Livewire;
 
 test('buying an item with enough gold and level creates an owned row and decreases gold', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 100,
@@ -36,7 +39,7 @@ test('buying an item with enough gold and level creates an owned row and decreas
 });
 
 test('buying with insufficient gold is rejected and nothing changes', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 10,
@@ -58,7 +61,7 @@ test('buying with insufficient gold is rejected and nothing changes', function (
 });
 
 test('buying an item below the required level is rejected and nothing changes', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -82,7 +85,7 @@ test('buying an item below the required level is rejected and nothing changes', 
 });
 
 test('buying the same item twice is rejected on the second attempt, leaving exactly one owned row and one gold deduction', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -106,7 +109,7 @@ test('buying the same item twice is rejected on the second attempt, leaving exac
 });
 
 test('equipping an item sets it equipped, swaps out the same-slot occupant, and leaves another slot untouched', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 10,
         'gold' => 10000,
@@ -156,7 +159,7 @@ test('equipping an item sets it equipped, swaps out the same-slot occupant, and 
 });
 
 test('equipping an item the character does not own is rejected', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 10,
         'gold' => 1000,
@@ -174,7 +177,7 @@ test('equipping an item the character does not own is rejected', function () {
 });
 
 test('unequipping an owned item sets equipped to false', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -200,7 +203,7 @@ test('unequipping an owned item sets equipped to false', function () {
 // --- Gap-fill: exact-gold boundary, same-slot equip swap in isolation ---
 
 test('buying an item when gold exactly equals the cost succeeds and leaves zero gold', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 50,
@@ -224,7 +227,7 @@ test('buying an item when gold exactly equals the cost succeeds and leaves zero 
 });
 
 test('equipping a second owned item in the same slot unequips the first, even with no other items owned', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -263,14 +266,14 @@ test('equipping a second owned item in the same slot unequips the first, even wi
 
 function busyTrader(): Character
 {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 5,
         'gold' => 1000,
         'energy' => 10,
     ]);
 
-    app(App\Services\WorkService::class)->start($character, App\Models\Occupation::create([
+    app(WorkService::class)->start($character, Occupation::create([
         'name' => 'Grave Digger', 'description' => 'Dig.', 'min_level' => 1,
         'max_level' => 5, 'gold_per_energy' => 2,
     ]));
@@ -332,7 +335,7 @@ test('the market unblocks once the shift resolves, with no explicit resolve call
 });
 
 test('buying an item locked to another faction is rejected and no gold is spent', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'faction' => 'faction_1',
         'level' => 5,
@@ -349,7 +352,7 @@ test('buying an item locked to another faction is rejected and no gold is spent'
 });
 
 test('buying an item of the character own faction is allowed', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'faction' => 'faction_2',
         'level' => 5,
@@ -364,7 +367,7 @@ test('buying an item of the character own faction is allowed', function () {
 
 test('the market lists universal items plus the character own faction, and nothing else', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
+    Character::forceCreate(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
 
     $universal = Item::factory()->create(['faction' => null]);
     $mine = Item::factory()->create(['faction' => 'faction_1']);
@@ -394,7 +397,7 @@ function slotted(string $slot, string $name): Item
 }
 
 test('all four slots equip independently — filling one never unequips another', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -421,7 +424,7 @@ test('all four slots equip independently — filling one never unequips another'
 });
 
 test('equipping a second item in a non-weapon slot unequips only that slot occupant', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'gold' => 1000,
@@ -483,7 +486,7 @@ test('the factory honours the ADR-003 delta budgets, including the shield mobili
 
 test('the details popup opens with the full item breakdown and the action that applies', function () {
     $user = User::factory()->create();
-    $character = Character::create(['user_id' => $user->id, 'level' => 5, 'gold' => 1000]);
+    $character = Character::forceCreate(['user_id' => $user->id, 'level' => 5, 'gold' => 1000]);
 
     $shield = Item::create([
         'name' => 'Bone Shield',
@@ -523,7 +526,7 @@ test('the details popup opens with the full item breakdown and the action that a
 
 test('the details popup refuses an item the character faction cannot see', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
+    Character::forceCreate(['user_id' => $user->id, 'faction' => 'faction_1', 'level' => 5, 'gold' => 1000]);
 
     $theirs = Item::factory()->create(['faction' => 'faction_2']);
 
@@ -533,4 +536,37 @@ test('the details popup refuses an item the character faction cannot see', funct
     // The listing scope is re-applied, so an out-of-faction id opens nothing.
     expect($component->get('selectedItemId'))->toBeNull();
     expect($component->get('showDetails'))->toBeFalse();
+});
+
+test('equipping an item that is already equipped leaves it equipped rather than silently stripping it', function () {
+    // equip() is a public Livewire action, so the item id is client-chosen even
+    // though the Blade renders Unequip (not Equip) for an equipped item. The
+    // slot-wide mass-unequip below includes the row being equipped, and the
+    // Eloquent re-equip that followed it no-oped: the in-memory model still
+    // held equipped => true, so `equipped` was never dirty and no UPDATE was
+    // issued. Net effect was a silent unequip that reported success.
+    $character = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'level' => 10,
+        'gold' => 10000,
+    ]);
+    $sword = Item::create([
+        'name' => 'Iron Sword',
+        'slot' => 'weapon',
+        'strength_delta' => 5,
+        'min_level' => 1,
+        'cost' => 200,
+    ]);
+
+    $service = new MarketService;
+    $service->buy($character, $sword);
+    $service->equip($character, $sword);
+    $service->equip($character, $sword); // the replayed action
+
+    $owned = CharacterItem::where('character_id', $character->id)->where('item_id', $sword->id)->first();
+    expect($owned->equipped)->toBeTrue();
+
+    // The deltas still count — that is what the silent unequip actually cost.
+    expect((new CombatService)->effectiveStats($character->refresh())['strength'])
+        ->toBe($character->strength + 5);
 });

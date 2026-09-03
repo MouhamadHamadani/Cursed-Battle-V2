@@ -5,6 +5,7 @@ use App\Models\Character;
 use App\Models\CombatLog;
 use App\Models\User;
 use App\Services\OpponentService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 // Determinism strategy: force stats so the attacker's very first swing is a
@@ -13,7 +14,7 @@ use Livewire\Livewire;
 // the component resolves via the app's real, unseeded secure RNG.
 test('attacking the revealed mark resolves the fight, flashes no error, logs the combat, and conserves gold between the two characters', function () {
     $attackerUser = User::factory()->create();
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => $attackerUser->id,
         'level' => 1,
         'gold' => 50,
@@ -25,7 +26,7 @@ test('attacking the revealed mark resolves the fight, flashes no error, logs the
     ]);
 
     $defenderUser = User::factory()->create();
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => $defenderUser->id,
         'level' => 1,
         'gold' => 100,
@@ -62,8 +63,8 @@ test('GET /battle returns 200 for an authenticated user with a character', funct
 
 test('the page opens with no mark and a free search', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id]);
-    Character::create(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => $user->id]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     Livewire::test(Battle::class)
@@ -74,12 +75,12 @@ test('the page opens with no mark and a free search', function () {
 
 test('searching reveals exactly one opponent, and it is neither self nor a hospitalized character', function () {
     $user = User::factory()->create();
-    $me = Character::create(['user_id' => $user->id]);
-    $hospitalized = Character::create([
+    $me = Character::forceCreate(['user_id' => $user->id]);
+    $hospitalized = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'hospitalized_until' => now()->addMinutes(10),
     ]);
-    $healthy = Character::create(['user_id' => User::factory()->create()->id]);
+    $healthy = Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     $component = Livewire::test(Battle::class)->call('search');
@@ -91,9 +92,9 @@ test('searching reveals exactly one opponent, and it is neither self nor a hospi
 
 test('the revealed mark and its climbing price are shown on the page', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id, 'gold' => 500]);
-    Character::create(['user_id' => User::factory()->create()->id]);
-    Character::create(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => $user->id, 'gold' => 500]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     $component = Livewire::test(Battle::class)->call('search');
@@ -109,9 +110,9 @@ test('the revealed mark and its climbing price are shown on the page', function 
 
 test('a re-roll the character cannot afford flashes an error and takes no gold', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id, 'gold' => 1]);
-    Character::create(['user_id' => User::factory()->create()->id]);
-    Character::create(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => $user->id, 'gold' => 1]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     Livewire::test(Battle::class)
@@ -124,8 +125,8 @@ test('a re-roll the character cannot afford flashes an error and takes no gold',
 
 test('attacking with no mark revealed is refused and resolves nothing', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id]);
-    Character::create(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => $user->id]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     $component = Livewire::test(Battle::class)
@@ -141,7 +142,7 @@ test('attacking with no mark revealed is refused and resolves nothing', function
 // produce a result and open the modal, and a failed attack must not.
 test('a resolved fight opens the result modal, renders the outcome banner, and clears the mark', function () {
     $attackerUser = User::factory()->create();
-    Character::create([
+    Character::forceCreate([
         'user_id' => $attackerUser->id,
         'health' => 200,
         'max_health' => 200,
@@ -149,7 +150,7 @@ test('a resolved fight opens the result modal, renders the outcome banner, and c
         'dexterity' => 5,
     ]);
 
-    Character::create([
+    Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'dexterity' => 0,
     ]);
@@ -167,12 +168,12 @@ test('a resolved fight opens the result modal, renders the outcome banner, and c
 
 test('the result modal stays closed when the attack is rejected', function () {
     $user = User::factory()->create();
-    $me = Character::create(['user_id' => $user->id]);
-    $defender = Character::create(['user_id' => User::factory()->create()->id]);
+    $me = Character::forceCreate(['user_id' => $user->id]);
+    $defender = Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     // Revealed while healthy, then hospitalized before the swing lands.
-    $me->update(['opponent_id' => $defender->id]);
-    $me->update(['hospitalized_until' => now()->addMinutes(10)]);
+    $me->forceFill(['opponent_id' => $defender->id])->save();
+    $me->forceFill(['hospitalized_until' => now()->addMinutes(10)])->save();
 
     $this->actingAs($user);
     $component = Livewire::test(Battle::class)
@@ -185,9 +186,9 @@ test('the result modal stays closed when the attack is rejected', function () {
 
 test('gold spent on a re-roll is reflected on the page in the same request', function () {
     $user = User::factory()->create();
-    Character::create(['user_id' => $user->id, 'gold' => 500]);
-    Character::create(['user_id' => User::factory()->create()->id]);
-    Character::create(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => $user->id, 'gold' => 500]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
+    Character::forceCreate(['user_id' => User::factory()->create()->id]);
 
     $this->actingAs($user);
     Livewire::test(Battle::class)
@@ -195,3 +196,34 @@ test('gold spent on a re-roll is reflected on the page in the same request', fun
         ->call('search')   // 10
         ->assertSee('490');
 });
+
+test('rendering the battle page never writes to the character row, even when the revealed mark has gone stale', function () {
+    // current() is called twice per render (the opponent and searchCost
+    // computeds), so clearing a hospitalized mark from inside it turned a plain
+    // GET into two UPDATEs. The reveal is invalidated by *reading* it as
+    // unusable, not by writing the row: find() overwrites opponent_id on its
+    // next success and a won fight clears it in persistOutcome, so nothing
+    // needs the write.
+    $user = User::factory()->create();
+    $me = Character::forceCreate(['user_id' => $user->id, 'gold' => 100]);
+    $mark = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'hospitalized_until' => now()->addMinutes(10),
+    ]);
+    $me->forceFill(['opponent_id' => $mark->id])->save();
+
+    $writes = 0;
+    DB::listen(function ($query) use (&$writes) {
+        if (str_starts_with(strtolower(ltrim($query->sql)), 'update')) {
+            $writes++;
+        }
+    });
+
+    $this->actingAs($user);
+    Livewire::test(Battle::class)
+        ->assertSee('No mark before thee')   // the stale mark reads as absent
+        ->assertSee('Seek an Opponent');
+
+    expect($writes)->toBe(0);
+    expect($me->fresh()->opponent_id)->toEqual($mark->id); // untouched by a read
+})->group('reveal');

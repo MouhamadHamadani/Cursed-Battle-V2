@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Appended to the group (not declared on routes) so it also covers
+        // Livewire's self-registered POST /livewire/update endpoint — see
+        // AppServiceProvider::boot() for why. Limiter defined there.
+        $middleware->appendToGroup('web', 'throttle:game');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

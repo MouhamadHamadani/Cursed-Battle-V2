@@ -9,7 +9,7 @@ use App\Services\TrainingService;
 use App\Services\WorkService;
 
 test('isHospitalized returns true while hospitalized_until is in the future', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'hospitalized_until' => now()->addMinutes(30),
     ]);
@@ -18,7 +18,7 @@ test('isHospitalized returns true while hospitalized_until is in the future', fu
 });
 
 test('isHospitalized returns false once hospitalized_until has passed', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'hospitalized_until' => now()->addMinutes(30),
     ]);
@@ -29,7 +29,7 @@ test('isHospitalized returns false once hospitalized_until has passed', function
 });
 
 test('isHospitalized returns false when hospitalized_until is null', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
     ]);
 
@@ -39,13 +39,13 @@ test('isHospitalized returns false when hospitalized_until is null', function ()
 // Stats are set so only the hospital pre-check (not a stats-based outcome)
 // could plausibly gate the fight: attacker strength 1000, defender dexterity 0.
 test('a hospitalized attacker cannot attack a healthy defender', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'strength' => 1000,
         'hospitalized_until' => now()->addMinutes(10),
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'dexterity' => 0,
@@ -56,12 +56,12 @@ test('a hospitalized attacker cannot attack a healthy defender', function () {
 });
 
 test('a healthy attacker cannot attack a hospitalized defender', function () {
-    $attacker = Character::create([
+    $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'strength' => 1000,
     ]);
-    $defender = Character::create([
+    $defender = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'health' => 100,
         'dexterity' => 0,
@@ -73,7 +73,7 @@ test('a healthy attacker cannot attack a hospitalized defender', function () {
 });
 
 test('a hospitalized character with energy can still work a shift and earn gold', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
         'energy' => 8,
@@ -108,7 +108,7 @@ test('a hospitalized character with energy can still work a shift and earn gold'
 });
 
 test('a hospitalized character with energy can still train a stat', function () {
-    $character = Character::create([
+    $character = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'energy' => 10,
         'strength' => 5,
@@ -145,7 +145,7 @@ test('GET /hospital returns 200 for an authenticated user with a character', fun
 
 test('home shows the hospital banner when the character is hospitalized', function () {
     $user = User::factory()->create();
-    $user->character()->create(['hospitalized_until' => now()->addMinutes(30)]);
+    $user->character()->forceCreate(['hospitalized_until' => now()->addMinutes(30)]);
 
     $response = $this->actingAs($user)->get('/home');
 

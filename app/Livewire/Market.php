@@ -7,6 +7,7 @@ use App\Services\GameActionException;
 use App\Services\MarketService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -31,6 +32,19 @@ class Market extends Component
     public function character()
     {
         return auth()->user()->character;
+    }
+
+    /**
+     * Re-read after anything mutates the character elsewhere on the page — the
+     * status bar broadcasts this once a countdown settles a session. Without
+     * it the shuttered-stalls panel and every greyed-out Busy button survive
+     * the session that caused them, until a full page load. Same listener Work,
+     * Train and Home carry.
+     */
+    #[On('character-updated')]
+    public function refreshCharacter(): void
+    {
+        unset($this->character, $this->inventory, $this->ownedItemIds, $this->selectedOwned);
     }
 
     /**

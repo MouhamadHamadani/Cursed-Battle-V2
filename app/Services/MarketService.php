@@ -80,6 +80,11 @@ class MarketService
         self::assertNotBusy($character->refresh());
 
         DB::transaction(function () use ($character, $item) {
+            // Lock the character row before reading, so a whole slot swap
+            // serializes against a concurrent one. Without it two swaps in the
+            // same slot can interleave and leave the slot empty.
+            Character::whereKey($character->id)->lockForUpdate()->firstOrFail();
+
             $owned = CharacterItem::where('character_id', $character->id)->where('item_id', $item->id)->first();
             if (! $owned) {
                 throw new GameActionException('You do not own this item.');
@@ -90,7 +95,14 @@ class MarketService
                 ->whereHas('item', fn ($q) => $q->where('slot', $item->slot))
                 ->update(['equipped' => false]);
 
-            $owned->update(['equipped' => true]);
+            // Query builder, NOT $owned->update(): the mass-unequip above
+            // includes this very row, but only in the database — the loaded
+            // model still holds equipped => true, so Eloquent would find
+            // nothing dirty (the boolean cast makes true and 1 equivalent),
+            // skip the UPDATE entirely, and re-equipping an already-equipped
+            // item would silently strip it. Do not "fix" this by refreshing
+            // the model first; that re-arms the same trap for the next edit.
+            CharacterItem::whereKey($owned->id)->update(['equipped' => true]);
         });
     }
 

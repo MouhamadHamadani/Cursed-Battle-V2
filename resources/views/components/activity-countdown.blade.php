@@ -1,10 +1,14 @@
-@props(['completesAt'])
+@props(['completesAt', 'event' => 'activity-completed'])
 
 {{--
     Presentational only (ADR-002 Action Item 5): it formats a server-provided
     ISO timestamp and, when the clock runs out, asks the server to re-check.
     It never decides that a session is complete — resolvePending() does, and
     the server stays the source of truth.
+
+    Also drives the regen countdowns in the status bar, which need a different
+    wake-up event than a finished work/train session — hence the `event` prop.
+    The name is historical; this is a general server-anchored countdown.
 --}}
 <span
     x-data="{
@@ -30,13 +34,19 @@
 
             if (this.remaining === 0 && ! this.fired) {
                 this.fired = true;
-                $wire.$dispatch('activity-completed');
+                $wire.$dispatch('{{ $event }}');
             }
         },
         get display() {
-            const m = Math.floor(this.remaining / 60);
+            const h = Math.floor(this.remaining / 3600);
+            const m = Math.floor(this.remaining % 3600 / 60);
             const s = this.remaining % 60;
-            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            const ss = String(s).padStart(2, '0');
+            // Hours only once there are any: a refilling energy bar can be
+            // hours out (50 max energy at 1/tick is over four), and 250:00
+            // reads as a bug rather than a duration.
+            return h > 0 ? h + ':' + mm + ':' + ss : mm + ':' + ss;
         },
     }"
     x-text="display"
