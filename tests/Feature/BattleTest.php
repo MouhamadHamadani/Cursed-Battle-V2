@@ -4,6 +4,7 @@ use App\Livewire\Battle;
 use App\Models\Character;
 use App\Models\CombatLog;
 use App\Models\User;
+use App\Services\CombatService;
 use App\Services\OpponentService;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -12,7 +13,7 @@ use Livewire\Livewire;
 // guaranteed one-shot KO (defender dexterity 0 -> never dodges; strength gap
 // swamps the ± level variance) so the outcome is deterministic even though
 // the component resolves via the app's real, unseeded secure RNG.
-test('attacking the revealed mark resolves the fight, flashes no error, logs the combat, and conserves gold between the two characters', function () {
+test('attacking the revealed mark resolves the fight, flashes no error, logs the combat, and mints the winner a gold reward without touching the losers balance', function () {
     $attackerUser = User::factory()->create();
     $attacker = Character::forceCreate([
         'user_id' => $attackerUser->id,
@@ -36,7 +37,6 @@ test('attacking the revealed mark resolves the fight, flashes no error, logs the
         'defense' => 5,
         'dexterity' => 0,
     ]);
-    $goldBefore = $attacker->gold + $defender->gold;
 
     $this->actingAs($attackerUser);
     $component = Livewire::test(Battle::class)
@@ -48,8 +48,11 @@ test('attacking the revealed mark resolves the fight, flashes no error, logs the
     expect($component->get('lastFight.knockout'))->toBeTrue();
     expect(CombatLog::count())->toBe(1);
 
-    $goldAfter = $attacker->fresh()->gold + $defender->fresh()->gold;
-    expect($goldAfter)->toBe($goldBefore);
+    // Gold is minted to the winner (attacker), not stolen from the loser
+    // (defender) — level 1 vs level 1, no farm-gap halving.
+    $expectedReward = CombatService::GOLD_REWARD_BASE + 1 * CombatService::GOLD_REWARD_PER_LEVEL;
+    expect($attacker->fresh()->gold)->toBe(50 + $expectedReward);
+    expect($defender->fresh()->gold)->toBe(100); // untouched despite losing
 });
 
 test('GET /battle returns 200 for an authenticated user with a character', function () {
