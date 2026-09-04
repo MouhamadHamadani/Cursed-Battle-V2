@@ -26,8 +26,19 @@ class CombatService
     /** Every landed hit deals at least this much, so HP always moves. */
     public const MIN_DAMAGE = 1;
 
-    /** Fraction of the loser's gold stolen by the winner. */
-    public const GOLD_STEAL_PCT = 0.10;
+    /**
+     * Gold-on-loss (the loser paying the winner) is retired per owner
+     * decision — see ADR-001 addendum (2026-09-04). Replaced with a minted
+     * reward: the winner's gold gain no longer comes out of the loser's
+     * balance, so the loser's gold is never touched by combat.
+     *
+     * Winner's gold = GOLD_REWARD_BASE + loser.level * GOLD_REWARD_PER_LEVEL
+     * (same shape as the XP formula below, halved by the same FARM_GAP
+     * anti-farm check). Starting values — game-balance knobs, tune freely.
+     */
+    public const GOLD_REWARD_BASE = 20;
+
+    public const GOLD_REWARD_PER_LEVEL = 5;
 
     /** Minutes the loser is hospitalized (blocked from combat only). */
     public const HOSPITAL_MINUTES = 30;
@@ -318,22 +329,30 @@ class CombatService
 
         $loser->hospitalized_until = now()->addMinutes(self::HOSPITAL_MINUTES);
 
-        $stolen = (int) floor($loser->gold * self::GOLD_STEAL_PCT);
-        $loser->gold -= $stolen;
-        $winner->gold += $stolen;
+        // Same anti-farm gap gates both rewards below: beating an opponent
+        // far below your level halves the payout, whether it's gold or xp.
+        $isFarmGap = $winner->level > $loser->level + self::FARM_GAP;
+
+        // Minted, not stolen — the loser's gold is never touched by combat.
+        $goldReward = self::GOLD_REWARD_BASE + $loser->level * self::GOLD_REWARD_PER_LEVEL;
+        if ($isFarmGap) {
+            $goldReward = (int) floor($goldReward / 2);
+        }
+        $winner->gold += $goldReward;
 
         $attacker->save();
         $defender->save();
 
         $xp = self::XP_BASE + $loser->level * self::XP_PER_LEVEL;
-        if ($winner->level > $loser->level + self::FARM_GAP) {
+        if ($isFarmGap) {
             $xp = (int) floor($xp / 2);
         }
 
         $levelResult = app(LevelingService::class)->awardXp($winner, $xp);
 
         $attackerWon = $winnerKey === 'attacker';
-        $goldChange = $attackerWon ? $stolen : -$stolen;
+        // The loser's own gold never moves, so there's nothing to report when the attacker lost.
+        $goldChange = $attackerWon ? $goldReward : 0;
         $xpChange = $attackerWon ? $xp : 0;
 
         CombatLog::create([

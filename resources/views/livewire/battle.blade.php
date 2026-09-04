@@ -260,8 +260,8 @@
                     </div>
                     <div>
                         <x-label class="text-sm text-stone-400">{{ __('Gold') }}</x-label>
-                        <x-label class="text-xl {{ $lastFight['gold_change'] >= 0 ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $lastFight['gold_change'] >= 0 ? '+' : '' }}{{ $lastFight['gold_change'] }}
+                        <x-label class="text-xl {{ $lastFight['gold_change'] > 0 ? 'text-green-500' : 'text-stone-400' }}">
+                            {{ $lastFight['gold_change'] > 0 ? '+' : '' }}{{ $lastFight['gold_change'] }}
                         </x-label>
                     </div>
                     <div>

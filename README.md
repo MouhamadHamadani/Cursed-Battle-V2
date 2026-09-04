@@ -74,7 +74,7 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
    - Nothing needs collecting: the result lands on its own the next time a page paints. Walking away just means seeing it later.
    - Being *busy* does not protect you — others can still attack you mid-shift. Only the hospital blocks incoming attacks.
 4. **Market** — `/market` browse and buy gear across four equipment slots — **weapon, shield, head, body** — and equip one item per slot. Click an item's art for the full details popup (all four stat deltas, flavour text, and the action that applies). Gear carries signed stat deltas that sum into your effective stats; a shield trades a little speed and dexterity for defense. Costs gold and has level requirements.
-5. **Battle** — `/battle` attack another character. Fight resolves instantly in up to 10 rounds. Win = steal 10% of their gold + XP, lose = hospitalized for 30 minutes.
+5. **Battle** — `/battle` attack another character. Fight resolves instantly in up to 10 rounds. Win = a minted gold reward (scaled by the loser's level, not taken from their balance) + XP, lose = hospitalized for 30 minutes.
 6. **Hospital** — `/hospital` view remaining cooldown. While hospitalized, you can't fight (both attacking and being attacked are blocked). Work and Train stay available, and a shift you were already on runs to completion normally.
 7. **Level up** — accumulate XP via Work trickle and combat wins. Level thresholds are `level × 100` XP. Leveling up heals you fully, restores energy, and raises your max HP/energy caps.
 
@@ -87,7 +87,7 @@ Text-based, browser-first persistent multiplayer RPG (PBBG). Solo passion/portfo
 | Turn order | higher effective **speed** acts first; exact tie → attacker |
 | Combat rounds | max 10; resolve by remaining HP if no knockout |
 | Hospital cooldown | 30 minutes (blocks combat both directions only) |
-| Gold steal per win | 10% of loser's gold |
+| Gold reward per win | Minted: `GOLD_REWARD_BASE`(20) + loser.level × `GOLD_REWARD_PER_LEVEL`(5) — never taken from the loser; halved past the anti-farming gap |
 | XP per level-up | Level × 100 XP threshold |
 | Anti-farming | XP halved if winner's level > loser's level + 5 |
 | Train session | 5 min + 30s per level above 1 (5m at L1 → 29m30s at L50) |

@@ -6,6 +6,8 @@
 **Supersedes:** the draft combat formula in CLAUDE.md (which explicitly says "formalize via ADR before implementing Phase 6").
 
 > **Addendum (2026-09-01):** one clause of §Forces below — *"three fixed stat columns — no new 'speed' stat"* — is **superseded by [ADR-003](ADR-003-battle-stats-and-equipment-slots.md)**, which splits `agility` into `speed` (hit chance, turn order) and `dexterity` (dodge). Wherever this ADR says `agility` — §Effective stats, the `resolve()` algorithm's dodge line and turn order — read `dexterity` for dodge and `speed` for turn order, and note that a new miss roll precedes the dodge roll. The original wording is left in place deliberately: this ADR is a dated record, not a living document. **Everything else here still stands unchanged** — hospital, leveling, gold-steal, the XP formulas and every §Tunables value.
+>
+> **Addendum (2026-09-04):** the **§Gold** consequence below (`stolen = floor(loser.gold * GOLD_STEAL_PCT)`, loser pays winner directly) is **retired** — owner decision: the loser should not hand the winner money directly. Replaced with a **minted, level-scaled reward**: `winner.gold += GOLD_REWARD_BASE(20) + loser.level * GOLD_REWARD_PER_LEVEL(5)`, gated by the same `FARM_GAP` anti-farm check that already halves XP (same `$isFarmGap` condition, applied to both). The loser's gold is no longer touched by combat at all — win or lose, only the winner's balance moves, and only upward. `GOLD_STEAL_PCT`/the old transfer line are removed from `CombatService`; the values above are starting balance knobs, not final. **Deferred, still open:** a win-streak multiplier on top of the level-scaled base (escalating reward for consecutive wins, resetting on a loss) was discussed and intentionally not built yet — it needs new persisted state (`win_streak` on `Character`) and has real balance risk (snowballing, incentive to farm streaks over real opponents); revisit as a separate decision. Health, hospitalization, and the XP formula are unaffected and still fire exactly as documented below.
 
 ---
 
@@ -168,7 +170,8 @@ Model `CombatLog`: `$guarded=[]`, `casts()` → `['attacker_stats'=>'array','def
 | `MAX_ROUNDS` | 10 | CombatService |
 | `DODGE_CAP` | 75 (%) | CombatService |
 | `MIN_DAMAGE` | 1 | CombatService |
-| `GOLD_STEAL_PCT` | 0.10 | CombatService |
+| ~~`GOLD_STEAL_PCT`~~ | ~~0.10~~ | Retired 2026-09-04 — see addendum above |
+| `GOLD_REWARD_BASE` / `GOLD_REWARD_PER_LEVEL` | 20 / 5 | CombatService (minted win reward, added 2026-09-04) |
 | `HOSPITAL_MINUTES` | 30 | CombatService (sets loser's cooldown) |
 | `XP_BASE` / `XP_PER_LEVEL` / `FARM_GAP` | 50 / 10 / 5 | CombatService (win XP) |
 | `threshold(L)` step | L × 100 | LevelingService |

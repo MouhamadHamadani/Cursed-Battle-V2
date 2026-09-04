@@ -245,7 +245,9 @@ test('every landed hit deals at least the minimum damage floor even when strengt
     expect($defender->health)->toBe(1000 - CombatService::MAX_ROUNDS * CombatService::MIN_DAMAGE);
 });
 
-test('winning a fight steals exactly the gold-steal percentage from the loser', function () {
+test('winning a fight mints a level-scaled gold reward without touching the losers balance', function () {
+    // Gold is minted to the winner, not stolen from the loser (owner decision,
+    // 2026-09-04) — same formula shape as XP: BASE + loser.level * PER_LEVEL.
     $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 1,
@@ -265,13 +267,42 @@ test('winning a fight steals exactly the gold-steal percentage from the loser', 
         'dexterity' => 0,
     ]);
 
-    (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
 
     $attacker->refresh();
     $defender->refresh();
 
-    expect($defender->gold)->toBe(90); // 100 - 10% of 100
-    expect($attacker->gold)->toBe(10); // 0 + 10
+    $expectedReward = CombatService::GOLD_REWARD_BASE + 1 * CombatService::GOLD_REWARD_PER_LEVEL; // loser.level(1)
+    expect($result->goldChange)->toBe($expectedReward);
+    expect($attacker->gold)->toBe($expectedReward); // started at 0, minted in
+    expect($defender->gold)->toBe(100); // untouched despite losing
+});
+
+test('the gold reward scales with the losers level, same shape as xp', function () {
+    $attacker = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'level' => 5,
+        'gold' => 0,
+        'health' => 100,
+        'strength' => 1000,
+        'defense' => 5,
+        'dexterity' => 5,
+    ]);
+    $defender = Character::forceCreate([
+        'user_id' => User::factory()->create()->id,
+        'level' => 5,
+        'gold' => 0,
+        'health' => 100,
+        'strength' => 5,
+        'defense' => 5,
+        'dexterity' => 0,
+    ]);
+
+    (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
+
+    $attacker->refresh();
+
+    expect($attacker->gold)->toBe(CombatService::GOLD_REWARD_BASE + 5 * CombatService::GOLD_REWARD_PER_LEVEL);
 });
 
 test('effectiveStats reflects base stats plus only the equipped items deltas', function () {
@@ -456,11 +487,11 @@ test('resolving a fight writes exactly one combat log with the winner, events, a
     expect($log->defender_id)->toBe($defender->id);
     expect($log->winner_id)->toBe($attacker->id);
     expect($log->events)->not->toBeEmpty();
-    expect($log->gold_change)->toBe(10); // attacker won: +10% of loser's gold
+    expect($log->gold_change)->toBe(25); // GOLD_REWARD_BASE(20) + loser.level(1) * GOLD_REWARD_PER_LEVEL(5)
     expect($log->xp_change)->toBe(60); // attacker's xp gain, from the attacker's perspective
 });
 
-// --- Gap-fill: turn order, in-fight dodge, anti-farm XP, zero-gold steal, non-KO tiebreak win ---
+// --- Gap-fill: turn order, in-fight dodge, anti-farm XP, level-scaled gold, non-KO tiebreak win ---
 
 test('the higher-speed defender acts first and can knock out the attacker before it swings', function () {
     $attacker = Character::forceCreate([
@@ -562,11 +593,12 @@ test('a dodge actually occurs inside a real fight and deals zero damage', functi
     }
 });
 
-test('winner xp is halved by the anti-farm gap when a high-level attacker beats a much lower-level defender', function () {
+test('winner xp and gold reward are both halved by the anti-farm gap when a high-level attacker beats a much lower-level defender', function () {
     $attacker = Character::forceCreate([
         'user_id' => User::factory()->create()->id,
         'level' => 20,
         'xp' => 0,
+        'gold' => 100,
         'health' => 100,
         'strength' => 1000,
     ]);
@@ -584,34 +616,15 @@ test('winner xp is halved by the anti-farm gap when a high-level attacker beats 
     // loser.level(1) + FARM_GAP(5) is true, so it's halved: floor(60 / 2) = 30.
     expect($result->xpChange)->toBe(30);
 
-    $attacker->refresh();
-    expect($attacker->xp)->toBe(30); // started at 0; threshold(20)=2000 so no level-up interferes
-});
-
-test('gold steal from a loser with zero gold transfers nothing and leaves both balances unchanged', function () {
-    $attacker = Character::forceCreate([
-        'user_id' => User::factory()->create()->id,
-        'level' => 1,
-        'gold' => 100,
-        'health' => 100,
-        'strength' => 1000,
-    ]);
-    $defender = Character::forceCreate([
-        'user_id' => User::factory()->create()->id,
-        'level' => 1,
-        'gold' => 0,
-        'health' => 100,
-        'dexterity' => 0,
-    ]);
-
-    $result = (new CombatService(new Randomizer(new Mt19937(12345))))->resolve($attacker, $defender);
-
-    expect($result->goldChange)->toBe(0);
+    // Same gate, same halving: gold = GOLD_REWARD_BASE(20) + loser.level(1) *
+    // GOLD_REWARD_PER_LEVEL(5) = 25, halved to floor(25 / 2) = 12.
+    expect($result->goldChange)->toBe(12);
 
     $attacker->refresh();
     $defender->refresh();
-    expect($attacker->gold)->toBe(100); // unchanged: floor(0 * 0.10) = 0
-    expect($defender->gold)->toBe(0);
+    expect($attacker->xp)->toBe(30); // started at 0; threshold(20)=2000 so no level-up interferes
+    expect($attacker->gold)->toBe(112); // started at 100, minted reward halved by the farm gap
+    expect($defender->gold)->toBe(100); // untouched — loser's gold is never at risk
 });
 
 test('an attacker who wins the 10-round tiebreak on remaining hp still hospitalizes the loser and moves gold', function () {
@@ -655,8 +668,8 @@ test('an attacker who wins the 10-round tiebreak on remaining hp still hospitali
     expect($attacker->health)->toBeGreaterThan($defender->health);
 
     expect($defender->isHospitalized())->toBeTrue();
-    expect($defender->gold)->toBe(90); // 100 - 10% steal
-    expect($attacker->gold)->toBe(10);
+    expect($defender->gold)->toBe(100); // untouched despite losing — gold is minted, not stolen
+    expect($attacker->gold)->toBe(CombatService::GOLD_REWARD_BASE + 1 * CombatService::GOLD_REWARD_PER_LEVEL); // loser.level(1)
 });
 
 test('an exact remaining-hp tie after the round cap is resolved in the defenders favour', function () {
@@ -696,8 +709,8 @@ test('an exact remaining-hp tie after the round cap is resolved in the defenders
     expect($attacker->health)->toBe($defender->health); // genuinely tied
     expect($attacker->health)->toBe(40); // 50 - 10 rounds * 1 dmg each
     expect($attacker->isHospitalized())->toBeTrue(); // the loser is hospitalized
-    expect($attacker->gold)->toBe(90); // loser lost 10% to the winner
-    expect($defender->gold)->toBe(10);
+    expect($attacker->gold)->toBe(100); // untouched despite losing — gold is minted, not stolen
+    expect($defender->gold)->toBe(CombatService::GOLD_REWARD_BASE + 1 * CombatService::GOLD_REWARD_PER_LEVEL); // loser.level(1)
 });
 
 // ---------------------------------------------------------------------------
